@@ -1,0 +1,1 @@
+pub const START_INDEXER_QUEUE: &str = "indexer-service-start-indexer";

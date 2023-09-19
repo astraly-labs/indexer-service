@@ -1,0 +1,68 @@
+use std::str::FromStr;
+
+use diesel::{ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
+use crate::infra::db::schema::indexers;
+use crate::infra::errors::{adapt_infra_error, InfraError};
+
+#[derive(Serialize, Queryable, Selectable)]
+#[diesel(table_name = indexers)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct IndexerDb {
+    pub id: Uuid,
+    pub status: String,
+    pub indexer_type: String,
+    pub process_id: Option<i32>,
+}
+
+#[derive(Deserialize, Insertable)]
+#[diesel(table_name = indexers)]
+pub struct NewIndexerDb {
+    pub id: Uuid,
+    pub status: String,
+    pub indexer_type: String,
+}
+
+pub async fn insert(
+    pool: &deadpool_diesel::postgres::Pool,
+    new_indexer: NewIndexerDb,
+) -> Result<IndexerModel, InfraError> {
+    let conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res = conn
+        .interact(|conn| {
+            diesel::insert_into(indexers::table)
+                .values(new_indexer)
+                .returning(IndexerDb::as_returning())
+                .get_result(conn)
+        })
+        .await
+        .map_err(adapt_infra_error)?
+        .map_err(adapt_infra_error)?;
+
+    Ok(adapt_indexer_db_to_indexer(res))
+}
+
+pub async fn get(pool: &deadpool_diesel::postgres::Pool, id: Uuid) -> Result<IndexerModel, InfraError> {
+    let conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res = conn
+        .interact(move |conn| {
+            indexers::table.filter(indexers::id.eq(id)).select(IndexerDb::as_select()).get_result(conn)
+        })
+        .await
+        .map_err(adapt_infra_error)?
+        .map_err(adapt_infra_error)?;
+
+    Ok(adapt_indexer_db_to_indexer(res))
+}
+
+fn adapt_indexer_db_to_indexer(indexer_db: IndexerDb) -> IndexerModel {
+    IndexerModel {
+        id: indexer_db.id,
+        status: IndexerStatus::from_str(indexer_db.status.as_str()).unwrap(),
+        process_id: indexer_db.process_id,
+        indexer_type: IndexerType::from_str(indexer_db.indexer_type.as_str()).unwrap(),
+    }
+}

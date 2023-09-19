@@ -5,14 +5,18 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::config;
+use crate::consumers::indexers::consume_start_indexer;
 use crate::errors::internal_error;
 use crate::routes::app_router;
 
 mod config;
+pub mod constants;
+mod consumers;
 mod domain;
 mod errors;
 mod handlers;
 mod infra;
+pub mod publishers;
 mod routes;
 mod utils;
 
@@ -29,10 +33,7 @@ async fn main() {
 
     let config = config().await;
 
-    let manager = Manager::new(
-        config.db_url().to_string(),
-        deadpool_diesel::Runtime::Tokio1,
-    );
+    let manager = Manager::new(config.db_url().to_string(), deadpool_diesel::Runtime::Tokio1);
     let pool = Pool::builder(manager).build().unwrap();
 
     {
@@ -51,27 +52,15 @@ async fn main() {
     let socket_addr: SocketAddr = address.parse().unwrap();
 
     tracing::info!("listening on http://{}", socket_addr);
-    axum::Server::bind(&socket_addr)
-        .serve(app.into_make_service())
-        .await
-        .map_err(internal_error)
-        .unwrap()
+    consume_start_indexer(config.sqs_client());
+    axum::Server::bind(&socket_addr).serve(app.into_make_service()).await.map_err(internal_error).unwrap()
 }
 
 fn init_tracing() {
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "example_tokio_postgres=debug".into()),
-        )
-        .with(tracing_subscriber::fmt::layer())
-        .init();
+    tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).with_target(false).init();
 }
 
 async fn run_migrations(pool: &Pool) {
     let conn = pool.get().await.unwrap();
-    conn.interact(|conn| conn.run_pending_migrations(MIGRATIONS).map(|_| ()))
-        .await
-        .unwrap()
-        .unwrap();
+    conn.interact(|conn| conn.run_pending_migrations(MIGRATIONS).map(|_| ())).await.unwrap().unwrap();
 }
