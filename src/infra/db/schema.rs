@@ -6,20 +6,6 @@ diesel::table! {
         status -> Varchar,
         #[sql_name = "type"]
         indexer_type -> Varchar,
-        process_id -> Nullable<Int4>,
+        process_id -> Nullable<Int8>,
     }
 }
-
-diesel::table! {
-    posts (id) {
-        id -> Uuid,
-        title -> Varchar,
-        body -> Text,
-        published -> Bool,
-    }
-}
-
-diesel::allow_tables_to_appear_in_same_query!(
-    indexers,
-    posts,
-);

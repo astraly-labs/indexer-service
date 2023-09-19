@@ -5,7 +5,7 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::config;
-use crate::consumers::indexers::consume_start_indexer;
+use crate::consumers::init_consumers;
 use crate::errors::internal_error;
 use crate::routes::app_router;
 
@@ -33,14 +33,12 @@ async fn main() {
 
     let config = config().await;
 
-    let manager = Manager::new(config.db_url().to_string(), deadpool_diesel::Runtime::Tokio1);
-    let pool = Pool::builder(manager).build().unwrap();
-
     {
-        run_migrations(&pool).await;
+        run_migrations(&config.pool()).await;
     }
 
-    let state = AppState { pool };
+    // TODO: is it safe to clone this?
+    let state = AppState { pool: config.pool().clone() };
 
     let app = app_router(state.clone()).with_state(state);
 
@@ -52,12 +50,12 @@ async fn main() {
     let socket_addr: SocketAddr = address.parse().unwrap();
 
     tracing::info!("listening on http://{}", socket_addr);
-    consume_start_indexer(config.sqs_client());
+    init_consumers();
     axum::Server::bind(&socket_addr).serve(app.into_make_service()).await.map_err(internal_error).unwrap()
 }
 
 fn init_tracing() {
-    tracing_subscriber::fmt().with_max_level(tracing::Level::DEBUG).with_target(false).init();
+    tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).with_target(false).init();
 }
 
 async fn run_migrations(pool: &Pool) {

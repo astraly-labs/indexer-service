@@ -1,3 +1,4 @@
+use axum::body::HttpBody;
 use std::str::FromStr;
 
 use diesel::{ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper};
@@ -15,7 +16,7 @@ pub struct IndexerDb {
     pub id: Uuid,
     pub status: String,
     pub indexer_type: String,
-    pub process_id: Option<i32>,
+    pub process_id: Option<i64>,
 }
 
 #[derive(Deserialize, Insertable)]
@@ -24,6 +25,21 @@ pub struct NewIndexerDb {
     pub id: Uuid,
     pub status: String,
     pub indexer_type: String,
+}
+
+#[derive(Deserialize, Insertable)]
+#[diesel(table_name = indexers)]
+pub struct UpdateIndexerStatusDb {
+    pub id: Uuid,
+    pub status: String,
+}
+
+#[derive(Deserialize, Insertable)]
+#[diesel(table_name = indexers)]
+pub struct UpdateIndexerStatusAndProcessIdDb {
+    pub id: Uuid,
+    pub status: String,
+    pub process_id: i64,
 }
 
 pub async fn insert(
@@ -50,6 +66,25 @@ pub async fn get(pool: &deadpool_diesel::postgres::Pool, id: Uuid) -> Result<Ind
     let res = conn
         .interact(move |conn| {
             indexers::table.filter(indexers::id.eq(id)).select(IndexerDb::as_select()).get_result(conn)
+        })
+        .await
+        .map_err(adapt_infra_error)?
+        .map_err(adapt_infra_error)?;
+
+    Ok(adapt_indexer_db_to_indexer(res))
+}
+
+pub async fn update_status_and_process_id(
+    pool: &deadpool_diesel::postgres::Pool,
+    indexer: UpdateIndexerStatusAndProcessIdDb,
+) -> Result<IndexerModel, InfraError> {
+    let conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res = conn
+        .interact(move |conn| {
+            diesel::update(indexers::table)
+                .filter(indexers::id.eq(indexer.id))
+                .set((indexers::status.eq(indexer.status), indexers::process_id.eq(indexer.process_id)))
+                .get_result(conn)
         })
         .await
         .map_err(adapt_infra_error)?

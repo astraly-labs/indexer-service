@@ -1,3 +1,7 @@
 /target
 .idea
 .env
+/bin/*
+
+# to keep the bin folder
+!/bin/.gitkeep

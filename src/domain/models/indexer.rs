@@ -27,7 +27,7 @@ pub struct IndexerModel {
     pub id: Uuid,
     pub status: IndexerStatus,
     pub indexer_type: IndexerType,
-    pub process_id: Option<i32>,
+    pub process_id: Option<i64>,
 }
 
 #[derive(Debug)]

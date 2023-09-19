@@ -2,6 +2,7 @@ use aws_config::meta::region::RegionProviderChain;
 use aws_config::SdkConfig;
 use aws_sdk_sqs::config::Region;
 use aws_sdk_sqs::Client;
+use deadpool_diesel::postgres::{Manager, Object, Pool};
 use std::env;
 
 use dotenvy::dotenv;
@@ -18,11 +19,12 @@ struct DatabaseConfig {
     url: String,
 }
 
-#[derive(Debug)]
 pub struct Config {
     server: ServerConfig,
     db: DatabaseConfig,
     sqs_client: Client,
+    aws_config: SdkConfig,
+    pool: Pool,
 }
 
 impl Config {
@@ -40,6 +42,14 @@ impl Config {
 
     pub fn sqs_client(&self) -> &Client {
         &self.sqs_client
+    }
+
+    pub fn aws_config(&self) -> &SdkConfig {
+        &self.aws_config
+    }
+
+    pub fn pool(&self) -> &Pool {
+        &self.pool
     }
 }
 
@@ -62,7 +72,10 @@ async fn init_config() -> Config {
     // init AWS SQS
     let sqs_client = Client::new(&shared_config);
 
-    Config { server: server_config, db: database_config, sqs_client }
+    let manager = Manager::new(database_config.url.to_string(), deadpool_diesel::Runtime::Tokio1);
+    let pool = Pool::builder(manager).build().unwrap();
+
+    Config { server: server_config, db: database_config, sqs_client, aws_config: shared_config, pool }
 }
 
 pub async fn config() -> &'static Config {

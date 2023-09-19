@@ -1,7 +1,5 @@
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
-use crate::domain::models::post::PostError;
-use crate::handlers::posts::{CreatePostRequest, PostResponse};
-use crate::infra::repositories::{indexer_repository, post_repository};
+use crate::infra::repositories::indexer_repository;
 use crate::publishers::indexers::publish_start_indexer;
 use crate::utils::JsonExtractor;
 use crate::AppState;
