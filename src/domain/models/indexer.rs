@@ -14,7 +14,8 @@ pub enum IndexerStatus {
     Created,
     Running,
     Stopped,
-    Failed,
+    FailedRunning,
+    FailedStopping,
 }
 
 #[derive(Clone, Debug, PartialEq, EnumString, Serialize, Deserialize, Display)]
@@ -39,6 +40,7 @@ pub enum IndexerError {
     FailedToCreateFile(std::io::Error),
     IncorrectFileName,
     FailedToPushToQueue(aws_sdk_sqs::Error),
+    FailedToStopIndexer,
 }
 
 impl IntoResponse for IndexerError {

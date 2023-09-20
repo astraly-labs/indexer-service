@@ -1,9 +1,12 @@
+use axum::handler::Handler;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Router;
 
 use crate::handlers::indexers::create_indexer::create_indexer;
+use crate::handlers::indexers::get_indexer::get_indexer;
+use crate::handlers::indexers::stop_indexer::stop_indexer;
 use crate::AppState;
 
 pub fn app_router(state: AppState) -> Router<AppState> {
@@ -19,5 +22,9 @@ async fn handler_404() -> impl IntoResponse {
 }
 
 fn indexers_routes(state: AppState) -> Router<AppState> {
-    Router::new().route("/", post(create_indexer)).with_state(state)
+    Router::new()
+        .route("/", post(create_indexer))
+        .route("/stop/:id", get(stop_indexer))
+        .route("/:id", get(get_indexer))
+        .with_state(state)
 }

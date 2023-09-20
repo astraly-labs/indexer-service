@@ -1,0 +1,18 @@
+use axum::body::HttpBody;
+use axum::extract::State;
+use axum::Json;
+use uuid::Uuid;
+
+use crate::domain::models::indexer::{IndexerError, IndexerModel};
+use crate::infra::repositories::indexer_repository;
+use crate::utils::PathExtractor;
+use crate::AppState;
+
+pub async fn get_indexer(
+    State(state): State<AppState>,
+    PathExtractor(id): PathExtractor<Uuid>,
+) -> Result<Json<IndexerModel>, IndexerError> {
+    let indexer_model = indexer_repository::get(&state.pool, id).await.map_err(IndexerError::InfraError)?;
+
+    Ok(Json(indexer_model))
+}

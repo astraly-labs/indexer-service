@@ -74,6 +74,25 @@ pub async fn get(pool: &deadpool_diesel::postgres::Pool, id: Uuid) -> Result<Ind
     Ok(adapt_indexer_db_to_indexer(res))
 }
 
+pub async fn update_status(
+    pool: &deadpool_diesel::postgres::Pool,
+    indexer: UpdateIndexerStatusDb,
+) -> Result<IndexerModel, InfraError> {
+    let conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res = conn
+        .interact(move |conn| {
+            diesel::update(indexers::table)
+                .filter(indexers::id.eq(indexer.id))
+                .set(indexers::status.eq(indexer.status))
+                .get_result(conn)
+        })
+        .await
+        .map_err(adapt_infra_error)?
+        .map_err(adapt_infra_error)?;
+
+    Ok(adapt_indexer_db_to_indexer(res))
+}
+
 pub async fn update_status_and_process_id(
     pool: &deadpool_diesel::postgres::Pool,
     indexer: UpdateIndexerStatusAndProcessIdDb,
