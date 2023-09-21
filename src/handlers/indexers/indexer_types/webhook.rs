@@ -1,6 +1,7 @@
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel};
 use crate::handlers::indexers::indexer_types::Indexer;
+use crate::handlers::indexers::utils::get_script_tmp_directory;
 use crate::publishers::indexers::publish_failed_indexer;
 use std::env;
 use std::process::{Command, Stdio};
@@ -10,13 +11,13 @@ pub struct WebhookIndexer;
 impl Indexer for WebhookIndexer {
     fn start(&self, indexer: IndexerModel) -> u32 {
         let binary_file = format!("{}/bin/sink-webhook", env!("CARGO_MANIFEST_DIR"));
-        let script_path = format!("{}/scripts/{}.js", env!("CARGO_MANIFEST_DIR"), indexer.id.to_string());
+        let script_path = get_script_tmp_directory(indexer.id);
         let stream_url = env::var("APIBARA_DNA_STREAM_URL").expect("APIBARA_DNA_STREAM_URL is not set");
 
         let mut child_handle = Command::new(binary_file)
             // Silence  stdout and stderr
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            // .stdout(Stdio::null())
+            // .stderr(Stdio::null())
             .args([
                 "run",
                 &format!("{}",script_path),

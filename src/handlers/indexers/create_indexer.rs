@@ -1,4 +1,7 @@
+use crate::config::config;
+use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
+use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::infra::repositories::indexer_repository;
 use crate::publishers::indexers::publish_start_indexer;
 use crate::utils::JsonExtractor;
@@ -27,9 +30,17 @@ pub async fn create_indexer(
             return Err(IndexerError::IncorrectFileName);
         }
         let data = file.bytes().await.map_err(IndexerError::FailedToReadFile)?;
-        let mut file = fs::File::create(format!("{}/{}/{}.js", env!("CARGO_MANIFEST_DIR"), "scripts", id.to_string()))
-            .map_err(IndexerError::FailedToCreateFile)?;
-        file.write_all(data.to_vec().as_slice()).map_err(IndexerError::FailedToCreateFile)?;
+
+        let config = config().await;
+        config
+            .s3_client()
+            .put_object()
+            .bucket(INDEXER_SERVICE_BUCKET)
+            .key(get_s3_script_key(id))
+            .body(data.into())
+            .send()
+            .await
+            .map_err(IndexerError::FailedToUploadToS3)?;
     }
 
     let created_indexer =

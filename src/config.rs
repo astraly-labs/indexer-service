@@ -1,7 +1,8 @@
 use aws_config::meta::region::RegionProviderChain;
 use aws_config::SdkConfig;
+use aws_sdk_s3::Client as S3Client;
 use aws_sdk_sqs::config::Region;
-use aws_sdk_sqs::Client;
+use aws_sdk_sqs::Client as SqsClient;
 use deadpool_diesel::postgres::{Manager, Object, Pool};
 use std::env;
 
@@ -22,7 +23,8 @@ struct DatabaseConfig {
 pub struct Config {
     server: ServerConfig,
     db: DatabaseConfig,
-    sqs_client: Client,
+    sqs_client: SqsClient,
+    s3_client: S3Client,
     aws_config: SdkConfig,
     pool: Pool,
 }
@@ -40,8 +42,12 @@ impl Config {
         self.server.port
     }
 
-    pub fn sqs_client(&self) -> &Client {
+    pub fn sqs_client(&self) -> &SqsClient {
         &self.sqs_client
+    }
+
+    pub fn s3_client(&self) -> &S3Client {
+        &self.s3_client
     }
 
     pub fn aws_config(&self) -> &SdkConfig {
@@ -70,12 +76,15 @@ async fn init_config() -> Config {
     let shared_config = aws_config::from_env().load().await;
 
     // init AWS SQS
-    let sqs_client = Client::new(&shared_config);
+    let sqs_client = SqsClient::new(&shared_config);
+
+    // init AWS S3 client
+    let s3_client = S3Client::new(&shared_config);
 
     let manager = Manager::new(database_config.url.to_string(), deadpool_diesel::Runtime::Tokio1);
     let pool = Pool::builder(manager).build().unwrap();
 
-    Config { server: server_config, db: database_config, sqs_client, aws_config: shared_config, pool }
+    Config { server: server_config, db: database_config, sqs_client, s3_client, aws_config: shared_config, pool }
 }
 
 pub async fn config() -> &'static Config {

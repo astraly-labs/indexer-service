@@ -1,3 +1,7 @@
+use aws_sdk_s3::error::SdkError;
+use aws_sdk_s3::operation::get_object::GetObjectError;
+use aws_sdk_s3::operation::put_object::PutObjectError;
+use aws_sdk_s3::primitives::ByteStreamError;
 use axum::extract::multipart::MultipartError;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
@@ -41,6 +45,9 @@ pub enum IndexerError {
     IncorrectFileName,
     FailedToPushToQueue(aws_sdk_sqs::Error),
     FailedToStopIndexer,
+    FailedToUploadToS3(SdkError<PutObjectError>),
+    FailedToGetFromS3(SdkError<GetObjectError>),
+    FailedToCollectBytesFromS3(ByteStreamError),
 }
 
 impl IntoResponse for IndexerError {

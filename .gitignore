@@ -2,6 +2,8 @@
 .idea
 .env
 /bin/*
+/tmp/*
 
 # to keep the bin folder
 !/bin/.gitkeep
+!/tmp/.gitkeep
