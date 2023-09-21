@@ -1,0 +1,31 @@
+title Architecture
+
+actor User
+participant Indexer Service
+database Database
+
+
+User -> Indexer Service: POST / {script.js}
+Indexer Service ->Database: Create indexer in CREATED state
+Database -->Indexer Service: ok
+Indexer Service -> SQS: queue start indexer with id X
+Indexer Service-->User:ok
+SQS -->Indexer Service: start indexer with id X
+Indexer Service->Child Process:start apibara indexing with binary
+Child Process-->Indexer Service:ok
+alt indexer fails
+Child Process->Indexer Service: service failed
+Indexer Service->SQS: queue fail indexer with id X
+SQS-->Indexer Service: fail indexer with id X
+Indexer Service->Database: mark indexer with id X as FailedRunning
+Database-->Indexer Service:ok
+else indexer is stopped
+User ->Indexer Service:/stop/:id
+Indexer Service->Database: get process id
+Database-->Indexer Service:process id
+Indexer Service->Child Process: terminate
+Child Process-->Indexer Service: ok
+Indexer Service->Database:mark as FailedStopping
+Database-->Indexer Service:ok
+Indexer Service-->User:ok
+end
