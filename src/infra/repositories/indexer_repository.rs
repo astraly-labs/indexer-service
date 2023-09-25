@@ -1,4 +1,3 @@
-use axum::body::HttpBody;
 use std::str::FromStr;
 
 use diesel::{ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper};
@@ -141,13 +140,13 @@ pub async fn update_status_and_process_id(
     Ok(res.into())
 }
 
-impl Into<IndexerModel> for IndexerDb {
-    fn into(self) -> IndexerModel {
+impl From<IndexerDb> for IndexerModel {
+    fn from(value: IndexerDb) -> Self {
         IndexerModel {
-            id: self.id,
-            status: IndexerStatus::from_str(self.status.as_str()).unwrap(),
-            process_id: self.process_id,
-            indexer_type: IndexerType::from_str(self.indexer_type.as_str()).unwrap(),
+            id: value.id,
+            status: IndexerStatus::from_str(value.status.as_str()).unwrap(),
+            process_id: value.process_id,
+            indexer_type: IndexerType::from_str(value.indexer_type.as_str()).unwrap(),
         }
     }
 }

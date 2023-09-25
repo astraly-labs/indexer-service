@@ -1,4 +1,3 @@
-use axum::handler::Handler;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
@@ -10,7 +9,7 @@ use crate::handlers::indexers::stop_indexer::stop_indexer;
 use crate::AppState;
 
 pub fn app_router(state: AppState) -> Router<AppState> {
-    Router::new().route("/", get(root)).nest("/v1/indexers", indexers_routes(state.clone())).fallback(handler_404)
+    Router::new().route("/", get(root)).nest("/v1/indexers", indexers_routes(state)).fallback(handler_404)
 }
 
 async fn root() -> &'static str {

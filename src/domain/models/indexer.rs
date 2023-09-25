@@ -38,7 +38,6 @@ pub struct IndexerModel {
 #[derive(Debug)]
 pub enum IndexerError {
     InternalServerError,
-    NotFound(Uuid),
     InfraError(InfraError),
     FailedToReadFile(MultipartError),
     FailedToCreateFile(std::io::Error),
@@ -54,12 +53,11 @@ impl IntoResponse for IndexerError {
     fn into_response(self) -> axum::response::Response {
         tracing::error!("Error: {:?}", self);
         let (status, err_msg) = match self {
-            Self::NotFound(id) => (StatusCode::NOT_FOUND, format!("IndexerModel with id {} has not been found", id)),
             Self::InfraError(db_error) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error: {}", db_error))
             }
-            Self::IncorrectFileName => (StatusCode::BAD_REQUEST, format!("File key should be script.js")),
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error")),
+            Self::IncorrectFileName => (StatusCode::BAD_REQUEST, "File key should be script.js".into()),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".into()),
         };
         (status, Json(json!({"resource":"IndexerModel", "message": err_msg, "happened_at" : chrono::Utc::now() })))
             .into_response()

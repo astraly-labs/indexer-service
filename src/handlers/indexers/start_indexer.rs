@@ -1,20 +1,16 @@
-use axum::body::HttpBody;
-use axum::extract::State;
-use diesel::update;
 use std::fs;
 use std::io::Write;
+
 use uuid::Uuid;
 
 use crate::config::config;
 use crate::constants::s3::INDEXER_SERVICE_BUCKET;
-use crate::domain::models::indexer;
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
 use crate::handlers::indexers::indexer_types::{get_indexer_handler, Indexer};
 use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directory};
 use crate::infra::repositories::indexer_repository;
 use crate::infra::repositories::indexer_repository::{IndexerFilter, UpdateIndexerStatusAndProcessIdDb};
 use crate::publishers::indexers::publish_start_indexer;
-use crate::AppState;
 
 pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;

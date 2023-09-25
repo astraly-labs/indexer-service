@@ -1,5 +1,3 @@
-use serde::Deserialize;
-
 pub mod create_indexer;
 pub mod fail_indexer;
 pub mod get_indexer;
