@@ -63,7 +63,7 @@ pub async fn insert(
         .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
-    Ok(adapt_indexer_db_to_indexer(res))
+    Ok(res.into())
 }
 
 pub async fn get(pool: &deadpool_diesel::postgres::Pool, id: Uuid) -> Result<IndexerModel, InfraError> {
@@ -76,7 +76,7 @@ pub async fn get(pool: &deadpool_diesel::postgres::Pool, id: Uuid) -> Result<Ind
         .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
-    Ok(adapt_indexer_db_to_indexer(res))
+    Ok(res.into())
 }
 
 pub async fn get_all(
@@ -84,7 +84,7 @@ pub async fn get_all(
     filter: IndexerFilter,
 ) -> Result<Vec<IndexerModel>, InfraError> {
     let conn = pool.get().await.map_err(adapt_infra_error)?;
-    let res = conn
+    let res: Vec<IndexerDb> = conn
         .interact(move |conn| {
             let mut query = indexers::table.into_boxed::<diesel::pg::Pg>();
 
@@ -98,7 +98,7 @@ pub async fn get_all(
         .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
-    let posts: Vec<IndexerModel> = res.into_iter().map(|post_db| adapt_indexer_db_to_indexer(post_db)).collect();
+    let posts: Vec<IndexerModel> = res.into_iter().map(|indexer_db| indexer_db.into()).collect();
 
     Ok(posts)
 }
@@ -108,7 +108,7 @@ pub async fn update_status(
     indexer: UpdateIndexerStatusDb,
 ) -> Result<IndexerModel, InfraError> {
     let conn = pool.get().await.map_err(adapt_infra_error)?;
-    let res = conn
+    let res: IndexerDb = conn
         .interact(move |conn| {
             diesel::update(indexers::table)
                 .filter(indexers::id.eq(indexer.id))
@@ -119,7 +119,7 @@ pub async fn update_status(
         .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
-    Ok(adapt_indexer_db_to_indexer(res))
+    Ok(res.into())
 }
 
 pub async fn update_status_and_process_id(
@@ -127,7 +127,7 @@ pub async fn update_status_and_process_id(
     indexer: UpdateIndexerStatusAndProcessIdDb,
 ) -> Result<IndexerModel, InfraError> {
     let conn = pool.get().await.map_err(adapt_infra_error)?;
-    let res = conn
+    let res: IndexerDb = conn
         .interact(move |conn| {
             diesel::update(indexers::table)
                 .filter(indexers::id.eq(indexer.id))
@@ -138,14 +138,16 @@ pub async fn update_status_and_process_id(
         .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
-    Ok(adapt_indexer_db_to_indexer(res))
+    Ok(res.into())
 }
 
-fn adapt_indexer_db_to_indexer(indexer_db: IndexerDb) -> IndexerModel {
-    IndexerModel {
-        id: indexer_db.id,
-        status: IndexerStatus::from_str(indexer_db.status.as_str()).unwrap(),
-        process_id: indexer_db.process_id,
-        indexer_type: IndexerType::from_str(indexer_db.indexer_type.as_str()).unwrap(),
+impl Into<IndexerModel> for IndexerDb {
+    fn into(self) -> IndexerModel {
+        IndexerModel {
+            id: self.id,
+            status: IndexerStatus::from_str(self.status.as_str()).unwrap(),
+            process_id: self.process_id,
+            indexer_type: IndexerType::from_str(self.indexer_type.as_str()).unwrap(),
+        }
     }
 }
