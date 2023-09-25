@@ -82,7 +82,7 @@ impl Indexer for WebhookIndexer {
                 process_id.to_string().as_str(),
             ])
             .spawn()
-            .expect("Could not stop the webhook indexer")
+            .expect("Could not check the indexer status")
             .wait()
             .unwrap()
             .success()
