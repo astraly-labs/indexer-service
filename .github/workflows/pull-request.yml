@@ -10,12 +10,11 @@ jobs:
   linters:
     name: Run linters
     uses: ./.github/workflows/linters.yml
-    needs: changelog
 
   rust_build:
     name: Build Rust project
     uses: ./.github/workflows/rust-build.yml
-    needs: changelog
+    needs: linters
 
   linters_cargo:
     name: Run Cargo linters
