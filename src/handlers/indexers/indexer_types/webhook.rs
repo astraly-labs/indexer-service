@@ -16,8 +16,8 @@ impl Indexer for WebhookIndexer {
 
         let mut child_handle = Command::new(binary_file)
             // Silence  stdout and stderr
-            // .stdout(Stdio::null())
-            // .stderr(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .args([
                 "run",
                 &format!("{}",script_path),
@@ -66,5 +66,25 @@ impl Indexer for WebhookIndexer {
             return Err(FailedToStopIndexer);
         }
         Ok(())
+    }
+
+    fn is_running(&self, indexer: IndexerModel) -> bool {
+        let process_id = match indexer.process_id {
+            Some(process_id) => process_id,
+            None => panic!("Cannot check is running without process id"),
+        };
+        Command::new("ps")
+            // Silence  stdout and stderr
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .args([
+                "-p",
+                process_id.to_string().as_str(),
+            ])
+            .spawn()
+            .expect("Could not check the indexer status")
+            .wait()
+            .unwrap()
+            .success()
     }
 }

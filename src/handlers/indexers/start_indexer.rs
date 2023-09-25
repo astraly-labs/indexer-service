@@ -12,20 +12,30 @@ use crate::domain::models::indexer::{IndexerError, IndexerStatus};
 use crate::handlers::indexers::indexer_types::{get_indexer_handler, Indexer};
 use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directory};
 use crate::infra::repositories::indexer_repository;
-use crate::infra::repositories::indexer_repository::UpdateIndexerStatusAndProcessIdDb;
+use crate::infra::repositories::indexer_repository::{IndexerFilter, UpdateIndexerStatusAndProcessIdDb};
+use crate::publishers::indexers::publish_start_indexer;
 use crate::AppState;
 
 pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;
     let indexer_model = indexer_repository::get(config.pool(), id).await.map_err(IndexerError::InfraError)?;
+    let indexer = get_indexer_handler(&indexer_model.indexer_type);
 
     match indexer_model.status {
         IndexerStatus::Created => (),
+        IndexerStatus::Stopped => (),
+        IndexerStatus::Running => {
+            // it's possible that the indexer is in the running state but the process isn't running
+            // this can happen when the service restarts in an new machine but the process was still
+            // marked as running on the DB
+            if indexer.is_running(indexer_model.clone()) {
+                tracing::info!("Indexer is already running, id {}", indexer_model.id);
+                return Ok(());
+            }
+        }
         // TODO: add app level errors on the topmost level
         _ => panic!("Cannot start indexer in state {}", indexer_model.status),
     }
-
-    let indexer = get_indexer_handler(&indexer_model.indexer_type);
 
     let data = config
         .s3_client()
@@ -53,6 +63,23 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     )
     .await
     .map_err(IndexerError::InfraError)?;
+
+    Ok(())
+}
+
+pub async fn start_all_indexers() -> Result<(), IndexerError> {
+    let config = config().await;
+    let indexers =
+        indexer_repository::get_all(config.pool(), IndexerFilter { status: Some(IndexerStatus::Running.to_string()) })
+            .await
+            .map_err(IndexerError::InfraError)?;
+
+    for indexer in indexers {
+        // we can ideally check if the indexer is already running here but if there are a lot of indexers
+        // it would be too many db queries at startup, hence we do that inside the start_indexer function
+        // which runs by consuming from the SQS queue
+        publish_start_indexer(indexer.id).await.map_err(IndexerError::FailedToPushToQueue)?;
+    }
 
     Ok(())
 }
