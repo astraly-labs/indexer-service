@@ -19,6 +19,11 @@ pub struct IndexerDb {
     pub process_id: Option<i64>,
 }
 
+#[derive(Deserialize)]
+pub struct IndexerFilter {
+    pub status: Option<String>,
+}
+
 #[derive(Deserialize, Insertable)]
 #[diesel(table_name = indexers)]
 pub struct NewIndexerDb {
@@ -72,6 +77,30 @@ pub async fn get(pool: &deadpool_diesel::postgres::Pool, id: Uuid) -> Result<Ind
         .map_err(adapt_infra_error)?;
 
     Ok(adapt_indexer_db_to_indexer(res))
+}
+
+pub async fn get_all(
+    pool: &deadpool_diesel::postgres::Pool,
+    filter: IndexerFilter,
+) -> Result<Vec<IndexerModel>, InfraError> {
+    let conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res = conn
+        .interact(move |conn| {
+            let mut query = indexers::table.into_boxed::<diesel::pg::Pg>();
+
+            if let Some(status) = filter.status {
+                query = query.filter(indexers::status.eq(status));
+            }
+
+            query.select(IndexerDb::as_select()).load::<IndexerDb>(conn)
+        })
+        .await
+        .map_err(adapt_infra_error)?
+        .map_err(adapt_infra_error)?;
+
+    let posts: Vec<IndexerModel> = res.into_iter().map(|post_db| adapt_indexer_db_to_indexer(post_db)).collect();
+
+    Ok(posts)
 }
 
 pub async fn update_status(
