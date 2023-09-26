@@ -1,8 +1,7 @@
 use std::net::SocketAddr;
 
-use deadpool_diesel::postgres::{Manager, Pool};
+use deadpool_diesel::postgres::Pool;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::config;
 use crate::consumers::init_consumers;
@@ -34,7 +33,7 @@ async fn main() {
 
     let config = config().await;
 
-    run_migrations(&config.pool()).await;
+    run_migrations(config.pool()).await;
 
     // TODO: is it safe to clone this?
     let state = AppState { pool: config.pool().clone() };
@@ -52,7 +51,7 @@ async fn main() {
     init_consumers();
 
     // start all indexers that were running before the service was stopped
-    start_all_indexers().await;
+    start_all_indexers().await.expect("Failed to start all the indexers");
     axum::Server::bind(&socket_addr).serve(app.into_make_service()).await.map_err(internal_error).unwrap()
 }
 

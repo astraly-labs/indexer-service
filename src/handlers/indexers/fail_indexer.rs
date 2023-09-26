@@ -1,15 +1,9 @@
-use axum::body::HttpBody;
-use axum::extract::State;
-use diesel::update;
 use uuid::Uuid;
 
 use crate::config::config;
-use crate::domain::models::indexer;
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
-use crate::handlers::indexers::indexer_types::{get_indexer_handler, Indexer};
 use crate::infra::repositories::indexer_repository;
-use crate::infra::repositories::indexer_repository::{UpdateIndexerStatusAndProcessIdDb, UpdateIndexerStatusDb};
-use crate::AppState;
+use crate::infra::repositories::indexer_repository::UpdateIndexerStatusDb;
 
 pub async fn fail_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;

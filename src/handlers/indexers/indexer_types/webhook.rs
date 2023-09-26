@@ -20,14 +20,14 @@ impl Indexer for WebhookIndexer {
             .stderr(Stdio::null())
             .args([
                 "run",
-                &format!("{}",script_path),
+                script_path.as_str(),
                 "--target-url",
                 &stream_url
             ])
             .spawn()
             .expect("Could not start the webhook indexer");
 
-        let id = child_handle.id().clone();
+        let id = child_handle.id();
 
         tokio::spawn(async move {
             let exit_status = child_handle.wait();
