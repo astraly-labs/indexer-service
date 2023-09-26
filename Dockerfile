@@ -8,7 +8,7 @@
 # Create a stage for building the application.
 
 ARG RUST_VERSION=1.72.0
-ARG APP_NAME=axum-diesel-real-world
+ARG APP_NAME=indexer-service
 FROM rust:${RUST_VERSION}-slim-bullseye AS build
 ARG APP_NAME
 WORKDIR /app
@@ -17,6 +17,9 @@ WORKDIR /app
 
 RUN apt update
 RUN apt install -y libpq-dev
+
+# Install ca-certificates needed for AWS sdk
+RUN apt-get install -y --no-install-recommends ca-certificates
 
 
 
@@ -71,12 +74,12 @@ RUN adduser \
 USER appuser
 
 
-
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Expose the port that the application listens on.
-EXPOSE 3000
+EXPOSE 8080
 
 # What the container should run when it is started.
 CMD ["/bin/server"]
