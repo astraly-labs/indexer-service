@@ -29,8 +29,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
                 return Ok(());
             }
         }
-        // TODO: add app level errors on the topmost level
-        _ => panic!("Cannot start indexer in state {}", indexer_model.status),
+        _ => return Err(IndexerError::InvalidIndexerStatus(indexer_model.status)),
     }
 
     let data = config

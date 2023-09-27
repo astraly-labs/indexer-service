@@ -1,4 +1,5 @@
 use deadpool_diesel::InteractError;
+use diesel_async::pooled_connection::deadpool::PoolError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum InfraError {
@@ -25,7 +26,7 @@ impl Error for diesel::result::Error {
     }
 }
 
-impl Error for deadpool_diesel::PoolError {
+impl Error for PoolError {
     fn as_infra_error(&self) -> InfraError {
         InfraError::InternalServerError
     }

@@ -1,6 +1,8 @@
 use std::str::FromStr;
 
-use diesel::{ExpressionMethods, Insertable, QueryDsl, Queryable, RunQueryDsl, Selectable, SelectableHelper};
+use diesel::{ExpressionMethods, Insertable, QueryDsl, Queryable, Selectable, SelectableHelper};
+use diesel_async::pooled_connection::deadpool::Pool;
+use diesel_async::{AsyncPgConnection, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -46,56 +48,38 @@ pub struct UpdateIndexerStatusAndProcessIdDb {
     pub process_id: i64,
 }
 
-pub async fn insert(
-    pool: &deadpool_diesel::postgres::Pool,
-    new_indexer: NewIndexerDb,
-) -> Result<IndexerModel, InfraError> {
-    let conn = pool.get().await.map_err(adapt_infra_error)?;
-    let res = conn
-        .interact(|conn| {
-            diesel::insert_into(indexers::table)
-                .values(new_indexer)
-                .returning(IndexerDb::as_returning())
-                .get_result(conn)
-        })
+pub async fn _insert(pool: &Pool<AsyncPgConnection>, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError> {
+    let mut conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res = diesel::insert_into(indexers::table)
+        .values(new_indexer)
+        .returning(IndexerDb::as_returning())
+        .get_result(&mut conn)
         .await
-        .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
     Ok(res.into())
 }
 
-pub async fn get(pool: &deadpool_diesel::postgres::Pool, id: Uuid) -> Result<IndexerModel, InfraError> {
-    let conn = pool.get().await.map_err(adapt_infra_error)?;
-    let res = conn
-        .interact(move |conn| {
-            indexers::table.filter(indexers::id.eq(id)).select(IndexerDb::as_select()).get_result(conn)
-        })
+pub async fn get(pool: &Pool<AsyncPgConnection>, id: Uuid) -> Result<IndexerModel, InfraError> {
+    let mut conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res = indexers::table
+        .filter(indexers::id.eq(id))
+        .select(IndexerDb::as_select())
+        .get_result(&mut conn)
         .await
-        .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
     Ok(res.into())
 }
 
-pub async fn get_all(
-    pool: &deadpool_diesel::postgres::Pool,
-    filter: IndexerFilter,
-) -> Result<Vec<IndexerModel>, InfraError> {
-    let conn = pool.get().await.map_err(adapt_infra_error)?;
-    let res: Vec<IndexerDb> = conn
-        .interact(move |conn| {
-            let mut query = indexers::table.into_boxed::<diesel::pg::Pg>();
-
-            if let Some(status) = filter.status {
-                query = query.filter(indexers::status.eq(status));
-            }
-
-            query.select(IndexerDb::as_select()).load::<IndexerDb>(conn)
-        })
-        .await
-        .map_err(adapt_infra_error)?
-        .map_err(adapt_infra_error)?;
+pub async fn get_all(pool: &Pool<AsyncPgConnection>, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError> {
+    let mut conn = pool.get().await.map_err(adapt_infra_error)?;
+    let mut query = indexers::table.into_boxed::<diesel::pg::Pg>();
+    if let Some(status) = filter.status {
+        query = query.filter(indexers::status.eq(status));
+    }
+    let res: Vec<IndexerDb> =
+        query.select(IndexerDb::as_select()).load::<IndexerDb>(&mut conn).await.map_err(adapt_infra_error)?;
 
     let posts: Vec<IndexerModel> = res.into_iter().map(|indexer_db| indexer_db.into()).collect();
 
@@ -103,38 +87,30 @@ pub async fn get_all(
 }
 
 pub async fn update_status(
-    pool: &deadpool_diesel::postgres::Pool,
+    pool: &Pool<AsyncPgConnection>,
     indexer: UpdateIndexerStatusDb,
 ) -> Result<IndexerModel, InfraError> {
-    let conn = pool.get().await.map_err(adapt_infra_error)?;
-    let res: IndexerDb = conn
-        .interact(move |conn| {
-            diesel::update(indexers::table)
-                .filter(indexers::id.eq(indexer.id))
-                .set(indexers::status.eq(indexer.status))
-                .get_result(conn)
-        })
+    let mut conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res: IndexerDb = diesel::update(indexers::table)
+        .filter(indexers::id.eq(indexer.id))
+        .set(indexers::status.eq(indexer.status))
+        .get_result(&mut conn)
         .await
-        .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
     Ok(res.into())
 }
 
 pub async fn update_status_and_process_id(
-    pool: &deadpool_diesel::postgres::Pool,
+    pool: &Pool<AsyncPgConnection>,
     indexer: UpdateIndexerStatusAndProcessIdDb,
 ) -> Result<IndexerModel, InfraError> {
-    let conn = pool.get().await.map_err(adapt_infra_error)?;
-    let res: IndexerDb = conn
-        .interact(move |conn| {
-            diesel::update(indexers::table)
-                .filter(indexers::id.eq(indexer.id))
-                .set((indexers::status.eq(indexer.status), indexers::process_id.eq(indexer.process_id)))
-                .get_result(conn)
-        })
+    let mut conn = pool.get().await.map_err(adapt_infra_error)?;
+    let res: IndexerDb = diesel::update(indexers::table)
+        .filter(indexers::id.eq(indexer.id))
+        .set((indexers::status.eq(indexer.status), indexers::process_id.eq(indexer.process_id)))
+        .get_result(&mut conn)
         .await
-        .map_err(adapt_infra_error)?
         .map_err(adapt_infra_error)?;
 
     Ok(res.into())
