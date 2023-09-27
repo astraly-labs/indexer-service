@@ -21,7 +21,8 @@ pub async fn stop_indexer(
 
     let indexer = get_indexer_handler(&indexer_model.indexer_type);
 
-    // TODO: check if command failed because indexer was already stopped, in that case update status to Stopped
+    // TODO: check if command failed because indexer was already stopped, in that case update status to
+    // Stopped
     let new_status = match indexer.stop(indexer_model) {
         Ok(_) => IndexerStatus::Stopped,
         Err(_) => IndexerStatus::FailedStopping,

@@ -1,10 +1,11 @@
+use std::env;
+use std::process::{Command, Stdio};
+
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel};
 use crate::handlers::indexers::indexer_types::Indexer;
 use crate::handlers::indexers::utils::get_script_tmp_directory;
 use crate::publishers::indexers::publish_failed_indexer;
-use std::env;
-use std::process::{Command, Stdio};
 
 pub struct WebhookIndexer;
 
@@ -63,7 +64,7 @@ impl Indexer for WebhookIndexer {
             .success();
 
         if !is_success {
-            return Err(FailedToStopIndexer);
+            return Err(FailedToStopIndexer(process_id));
         }
         Ok(())
     }

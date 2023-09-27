@@ -43,7 +43,7 @@ pub enum IndexerError {
     FailedToCreateFile(std::io::Error),
     IncorrectFileName,
     FailedToPushToQueue(aws_sdk_sqs::Error),
-    FailedToStopIndexer,
+    FailedToStopIndexer(i64),
     FailedToUploadToS3(SdkError<PutObjectError>),
     FailedToGetFromS3(SdkError<GetObjectError>),
     FailedToCollectBytesFromS3(ByteStreamError),
