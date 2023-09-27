@@ -50,7 +50,8 @@ pub struct IndexerConsumers;
 #[async_trait]
 impl Consumers for IndexerConsumers {
     async fn init_consumers() -> Result<(), IndexerError> {
-        tokio::try_join!(consume_start_indexer(), consume_failed_indexer())?;
+        tokio::spawn(consume_start_indexer());
+        tokio::spawn(consume_failed_indexer());
         Ok(())
     }
 }
