@@ -1,7 +1,8 @@
-use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE, STOP_INDEXER_QUEUE};
-use crate::publishers::send_sqs_message;
 use aws_sdk_sqs::Error;
 use uuid::Uuid;
+
+use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE, STOP_INDEXER_QUEUE};
+use crate::publishers::send_sqs_message;
 
 pub async fn publish_start_indexer(indexer_id: Uuid) -> Result<(), Error> {
     tracing::info!("Sending message to start indexer with id: {}", indexer_id.to_string());

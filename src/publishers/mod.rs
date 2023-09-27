@@ -1,7 +1,8 @@
 pub mod indexers;
 
-use crate::config::config;
 use aws_sdk_sqs::Error;
+
+use crate::config::config;
 
 async fn send_sqs_message(queue_url: &str, message: &str) -> Result<(), Error> {
     let config = config().await;

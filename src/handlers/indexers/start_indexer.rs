@@ -47,7 +47,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let mut file = fs::File::create(get_script_tmp_directory(id)).map_err(IndexerError::FailedToCreateFile)?;
     file.write_all(aggregated_bytes.into_bytes().to_vec().as_slice()).map_err(IndexerError::FailedToCreateFile)?;
 
-    let process_id = indexer.start(indexer_model.clone()) as i64;
+    let process_id = indexer.start(indexer_model.clone()).into();
 
     indexer_repository::update_status_and_process_id(
         config.pool(),
@@ -74,6 +74,7 @@ pub async fn start_all_indexers() -> Result<(), IndexerError> {
         // we can ideally check if the indexer is already running here but if there are a lot of indexers
         // it would be too many db queries at startup, hence we do that inside the start_indexer function
         // which runs by consuming from the SQS queue
+        // TODO: Optimize this in the future (async tokio tasks?)
         publish_start_indexer(indexer.id).await.map_err(IndexerError::FailedToPushToQueue)?;
     }
 

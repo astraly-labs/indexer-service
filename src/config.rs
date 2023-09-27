@@ -1,4 +1,5 @@
 use std::env;
+use std::sync::Arc;
 
 use aws_sdk_s3::Client as S3Client;
 use aws_sdk_sqs::Client as SqsClient;
@@ -21,7 +22,7 @@ pub struct Config {
     server: ServerConfig,
     sqs_client: SqsClient,
     s3_client: S3Client,
-    pool: Pool,
+    pool: Arc<Pool>,
 }
 
 impl Config {
@@ -41,7 +42,7 @@ impl Config {
         &self.s3_client
     }
 
-    pub fn pool(&self) -> &Pool {
+    pub fn pool(&self) -> &Arc<Pool> {
         &self.pool
     }
 }
@@ -71,7 +72,7 @@ async fn init_config() -> Config {
     let manager = Manager::new(database_config.url.to_string(), deadpool_diesel::Runtime::Tokio1);
     let pool = Pool::builder(manager).build().unwrap();
 
-    Config { server: server_config, sqs_client, s3_client, pool }
+    Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool) }
 }
 
 pub async fn config() -> &'static Config {
