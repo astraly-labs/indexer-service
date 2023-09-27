@@ -1,4 +1,4 @@
-use deadpool_diesel::InteractError;
+use diesel::result::Error;
 use diesel_async::pooled_connection::deadpool::PoolError;
 
 #[derive(Debug, thiserror::Error)]
@@ -9,31 +9,17 @@ pub enum InfraError {
     NotFound,
 }
 
-pub fn adapt_infra_error<T: Error>(error: T) -> InfraError {
-    error.as_infra_error()
-}
-
-pub trait Error {
-    fn as_infra_error(&self) -> InfraError;
-}
-
-impl Error for diesel::result::Error {
-    fn as_infra_error(&self) -> InfraError {
-        match self {
-            diesel::result::Error::NotFound => InfraError::NotFound,
+impl From<Error> for InfraError {
+    fn from(value: Error) -> Self {
+        match value {
+            Error::NotFound => InfraError::NotFound,
             _ => InfraError::InternalServerError,
         }
     }
 }
 
-impl Error for PoolError {
-    fn as_infra_error(&self) -> InfraError {
-        InfraError::InternalServerError
-    }
-}
-
-impl Error for InteractError {
-    fn as_infra_error(&self) -> InfraError {
-        InfraError::InternalServerError
+impl From<PoolError> for InfraError {
+    fn from(_value: PoolError) -> Self {
+        Self::InternalServerError
     }
 }
