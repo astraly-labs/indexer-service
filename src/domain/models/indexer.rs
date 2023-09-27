@@ -8,6 +8,7 @@ use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use sqs_worker::SQSListenerClientBuilderError;
 use strum_macros::{Display, EnumString};
 use uuid::Uuid;
 
@@ -35,18 +36,30 @@ pub struct IndexerModel {
     pub process_id: Option<i64>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum IndexerError {
+    #[error("internal server error")]
     InternalServerError,
+    #[error("infra error : {0}")]
     InfraError(InfraError),
+    #[error("failed to read file from multipart request")]
     FailedToReadFile(MultipartError),
+    #[error("failed to create file : {0}")]
     FailedToCreateFile(std::io::Error),
+    #[error("incorrect file name")]
     IncorrectFileName,
+    #[error("failed to push to queue")]
     FailedToPushToQueue(aws_sdk_sqs::Error),
+    #[error("failed to stop indexer : {0}")]
     FailedToStopIndexer(i64),
+    #[error("failed to upload to S3")]
     FailedToUploadToS3(SdkError<PutObjectError>),
+    #[error("failed to get from S3")]
     FailedToGetFromS3(SdkError<GetObjectError>),
+    #[error("failed to collect bytes from S3")]
     FailedToCollectBytesFromS3(ByteStreamError),
+    #[error("failed to create SQS listener")]
+    FailedToCreateSQSListener(SQSListenerClientBuilderError),
 }
 
 impl IntoResponse for IndexerError {

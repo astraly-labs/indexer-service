@@ -1,8 +1,13 @@
+#![feature(async_fn_in_trait)]
+#![feature(async_closure)]
+
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use deadpool_diesel::postgres::Pool;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use domain::models::indexer::IndexerError;
+use errors::AppError;
 
 use crate::config::config;
 use crate::consumers::init_consumers;
@@ -39,7 +44,7 @@ pub struct AppState {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), AppError> {
     init_tracing();
 
     let config = config().await;
@@ -60,16 +65,14 @@ async fn main() {
     tracing::info!("listening on http://{}", socket_addr);
 
     // initializes the SQS messages consumers
-    init_consumers();
+    init_consumers().await.map_err(internal_error)?;
 
     // start all indexers that were running before the service was stopped
-    start_all_indexers().await.expect("Failed to start all the indexers");
+    start_all_indexers().await.map_err(internal_error)?;
 
-    axum::Server::bind(&socket_addr)
-        .serve(app.into_make_service())
-        .await
-        .map_err(internal_error)
-        .expect("Failed to start the server");
+    axum::Server::bind(&socket_addr).serve(app.into_make_service()).await.map_err(internal_error)?;
+
+    Ok(())
 }
 
 fn init_tracing() {
