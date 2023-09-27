@@ -1,24 +1,15 @@
-use std::fmt;
-
 use deadpool_diesel::InteractError;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum InfraError {
+    #[error("internal server error")]
     InternalServerError,
+    #[error("not found")]
     NotFound,
 }
 
 pub fn adapt_infra_error<T: Error>(error: T) -> InfraError {
     error.as_infra_error()
-}
-
-impl fmt::Display for InfraError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            InfraError::NotFound => write!(f, "Not found"),
-            InfraError::InternalServerError => write!(f, "Internal server error"),
-        }
-    }
 }
 
 pub trait Error {

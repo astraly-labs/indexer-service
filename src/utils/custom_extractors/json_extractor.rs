@@ -9,6 +9,6 @@ pub struct JsonExtractor<T>(pub T);
 
 impl From<JsonRejection> for AppError {
     fn from(rejection: JsonRejection) -> Self {
-        AppError::BodyParsingError(rejection.to_string())
+        AppError::BodyParsing(rejection.to_string())
     }
 }
