@@ -1,6 +1,3 @@
-#![feature(async_fn_in_trait)]
-#![feature(async_closure)]
-
 use std::net::SocketAddr;
 use std::sync::Arc;
 

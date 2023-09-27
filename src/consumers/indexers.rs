@@ -1,3 +1,4 @@
+use axum::async_trait;
 use sqs_worker::{SQSListener, SQSListenerClientBuilder};
 
 use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE};
@@ -46,6 +47,7 @@ async fn consume_failed_indexer() -> Result<(), IndexerError> {
 }
 
 pub struct IndexerConsumers;
+#[async_trait]
 impl Consumers for IndexerConsumers {
     async fn init_consumers() -> Result<(), IndexerError> {
         tokio::try_join!(consume_start_indexer(), consume_failed_indexer())?;

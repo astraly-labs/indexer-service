@@ -1,5 +1,6 @@
 use std::env;
 
+use axum::async_trait;
 use sqs_worker::EnvironmentVariableCredentialsProvider;
 
 use crate::consumers::indexers::IndexerConsumers;
@@ -7,6 +8,7 @@ use crate::domain::models::indexer::IndexerError;
 
 pub mod indexers;
 
+#[async_trait]
 pub trait Consumers {
     async fn init_consumers() -> Result<(), IndexerError>;
 }
