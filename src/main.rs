@@ -6,7 +6,6 @@ use std::sync::Arc;
 
 use deadpool_diesel::postgres::Pool;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use domain::models::indexer::IndexerError;
 use errors::AppError;
 
 use crate::config::config;
@@ -65,10 +64,10 @@ async fn main() -> Result<(), AppError> {
     tracing::info!("listening on http://{}", socket_addr);
 
     // initializes the SQS messages consumers
-    init_consumers().await.map_err(internal_error)?;
+    init_consumers().await.map_err(AppError::Indexer)?;
 
     // start all indexers that were running before the service was stopped
-    start_all_indexers().await.map_err(internal_error)?;
+    start_all_indexers().await.map_err(AppError::Indexer)?;
 
     axum::Server::bind(&socket_addr).serve(app.into_make_service()).await.map_err(internal_error)?;
 
