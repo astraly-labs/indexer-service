@@ -36,6 +36,7 @@ pub struct IndexerModel {
     pub status: IndexerStatus,
     pub indexer_type: IndexerType,
     pub process_id: Option<i64>,
+    pub target_url: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -45,7 +46,11 @@ pub enum IndexerError {
     #[error("infra error : {0}")]
     InfraError(InfraError),
     #[error("failed to read file from multipart request")]
-    FailedToReadFile(MultipartError),
+    FailedToReadMultipartField(MultipartError),
+    #[error("unexpected field in multipart request : {0}")]
+    UnexpectedMultipartField(String),
+    #[error("failed to build create indexer request")]
+    FailedToBuildCreateIndexerRequest,
     #[error("failed to create file : {0}")]
     FailedToCreateFile(std::io::Error),
     #[error("incorrect file name")]

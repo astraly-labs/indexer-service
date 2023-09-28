@@ -1,6 +1,8 @@
+use axum::extract::State;
 use std::fs;
 use std::io::Write;
 
+use crate::AppState;
 use uuid::Uuid;
 
 use crate::config::config;
@@ -11,6 +13,7 @@ use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directo
 use crate::infra::repositories::indexer_repository;
 use crate::infra::repositories::indexer_repository::{IndexerFilter, UpdateIndexerStatusAndProcessIdDb};
 use crate::publishers::indexers::publish_start_indexer;
+use crate::utils::PathExtractor;
 
 pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;
@@ -60,6 +63,13 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     .map_err(IndexerError::InfraError)?;
 
     Ok(())
+}
+
+pub async fn start_indexer_api(
+    State(_state): State<AppState>,
+    PathExtractor(id): PathExtractor<Uuid>,
+) -> Result<(), IndexerError> {
+    start_indexer(id).await
 }
 
 pub async fn start_all_indexers() -> Result<(), IndexerError> {

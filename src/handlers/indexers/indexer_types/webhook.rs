@@ -1,4 +1,5 @@
 use std::env;
+use std::io::{BufRead, BufReader};
 use std::process::{Command, Stdio};
 
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
@@ -13,17 +14,19 @@ impl Indexer for WebhookIndexer {
     fn start(&self, indexer: IndexerModel) -> u32 {
         let binary_file = format!("{}/bin/sink-webhook", env!("CARGO_MANIFEST_DIR"));
         let script_path = get_script_tmp_directory(indexer.id);
-        let stream_url = env::var("APIBARA_DNA_STREAM_URL").expect("APIBARA_DNA_STREAM_URL is not set");
+        let auth_token = env::var("APIBARA_AUTH_TOKEN").expect("APIBARA_AUTH_TOKEN is not set");
 
         let mut child_handle = Command::new(binary_file)
             // Silence  stdout and stderr
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
             .args([
                 "run",
                 script_path.as_str(),
                 "--target-url",
-                &stream_url
+                indexer.target_url.as_str(),
+                "--auth-token",
+                auth_token.as_str(),
             ])
             .spawn()
             .expect("Could not start the webhook indexer");
@@ -31,6 +34,23 @@ impl Indexer for WebhookIndexer {
         let id = child_handle.id();
 
         tokio::spawn(async move {
+            // all success messages are logged first, if error messages
+            // occur between success messages they won't be logged till
+            // the indexer is stopped
+            if let Some(ref mut stdout) = child_handle.stdout {
+                for line in BufReader::new(stdout).lines() {
+                    let line = line.unwrap();
+                    println!("[indexer-{}-stdout] {}", indexer.id, line);
+                }
+            }
+
+            if let Some(ref mut stderr) = child_handle.stderr {
+                for line in BufReader::new(stderr).lines() {
+                    let line = line.unwrap();
+                    println!("[indexer-{}-stderr] {}", indexer.id, line);
+                }
+            }
+
             let exit_status = child_handle.wait();
             if exit_status.unwrap().success() {
                 tracing::info!("Child process exited successfully {}", indexer.id);
@@ -54,7 +74,6 @@ impl Indexer for WebhookIndexer {
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .args([
-                "-9",
                 process_id.to_string().as_str(),
             ])
             .spawn()
