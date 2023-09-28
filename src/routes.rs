@@ -6,6 +6,7 @@ use axum::Router;
 use crate::handlers::global::health::health_check;
 use crate::handlers::indexers::create_indexer::create_indexer;
 use crate::handlers::indexers::get_indexer::get_indexer;
+use crate::handlers::indexers::start_indexer::start_indexer_api;
 use crate::handlers::indexers::stop_indexer::stop_indexer;
 use crate::AppState;
 
@@ -23,7 +24,8 @@ async fn handler_404() -> impl IntoResponse {
 fn indexers_routes(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", post(create_indexer))
-        .route("/stop/:id", get(stop_indexer))
+        .route("/stop/:id", post(stop_indexer))
+        .route("/start/:id", post(start_indexer_api))
         .route("/:id", get(get_indexer))
         .with_state(state)
 }

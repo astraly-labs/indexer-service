@@ -18,6 +18,7 @@ pub struct IndexerDb {
     pub status: String,
     pub indexer_type: String,
     pub process_id: Option<i64>,
+    pub target_url: String,
 }
 
 #[derive(Deserialize)]
@@ -31,6 +32,7 @@ pub struct NewIndexerDb {
     pub id: Uuid,
     pub status: String,
     pub indexer_type: String,
+    pub target_url: String,
 }
 
 #[derive(Deserialize, Insertable)]
@@ -114,6 +116,7 @@ impl From<IndexerDb> for IndexerModel {
             status: IndexerStatus::from_str(value.status.as_str()).unwrap(),
             process_id: value.process_id,
             indexer_type: IndexerType::from_str(value.indexer_type.as_str()).unwrap(),
+            target_url: value.target_url,
         }
     }
 }

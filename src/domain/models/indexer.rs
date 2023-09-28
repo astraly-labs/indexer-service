@@ -36,6 +36,7 @@ pub struct IndexerModel {
     pub status: IndexerStatus,
     pub indexer_type: IndexerType,
     pub process_id: Option<i64>,
+    pub target_url: String,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -45,11 +46,13 @@ pub enum IndexerError {
     #[error("infra error : {0}")]
     InfraError(InfraError),
     #[error("failed to read file from multipart request")]
-    FailedToReadFile(MultipartError),
+    FailedToReadMultipartField(MultipartError),
+    #[error("unexpected field in multipart request : {0}")]
+    UnexpectedMultipartField(String),
+    #[error("failed to build create indexer request")]
+    FailedToBuildCreateIndexerRequest,
     #[error("failed to create file : {0}")]
     FailedToCreateFile(std::io::Error),
-    #[error("incorrect file name")]
-    IncorrectFileName,
     #[error("failed to push to queue")]
     FailedToPushToQueue(aws_sdk_sqs::Error),
     #[error("failed to stop indexer : {0}")]
@@ -66,8 +69,6 @@ pub enum IndexerError {
     InvalidIndexerStatus(IndexerStatus),
     #[error("failed to query db")]
     FailedToQueryDb(diesel::result::Error),
-    #[error("no file found")]
-    NoFileFound,
 }
 
 impl From<diesel::result::Error> for IndexerError {
@@ -83,7 +84,6 @@ impl IntoResponse for IndexerError {
             Self::InfraError(db_error) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error: {}", db_error))
             }
-            Self::IncorrectFileName => (StatusCode::BAD_REQUEST, "File key should be script.js".into()),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".into()),
         };
         (status, Json(json!({"resource":"IndexerModel", "message": err_msg, "happened_at" : chrono::Utc::now() })))
