@@ -14,8 +14,9 @@ use uuid::Uuid;
 
 use crate::infra::errors::InfraError;
 
-#[derive(Clone, Debug, PartialEq, EnumString, Serialize, Deserialize, Display)]
+#[derive(Clone, Default, Debug, PartialEq, EnumString, Serialize, Deserialize, Display)]
 pub enum IndexerStatus {
+    #[default]
     Created,
     Running,
     Stopped,
@@ -23,12 +24,13 @@ pub enum IndexerStatus {
     FailedStopping,
 }
 
-#[derive(Clone, Debug, PartialEq, EnumString, Serialize, Deserialize, Display)]
+#[derive(Clone, Default, Debug, PartialEq, EnumString, Serialize, Deserialize, Display)]
 pub enum IndexerType {
+    #[default]
     Webhook,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct IndexerModel {
     pub id: Uuid,
     pub status: IndexerStatus,
@@ -60,6 +62,18 @@ pub enum IndexerError {
     FailedToCollectBytesFromS3(ByteStreamError),
     #[error("failed to create SQS listener")]
     FailedToCreateSQSListener(SQSListenerClientBuilderError),
+    #[error("invalid indexer status")]
+    InvalidIndexerStatus(IndexerStatus),
+    #[error("failed to query db")]
+    FailedToQueryDb(diesel::result::Error),
+    #[error("no file found")]
+    NoFileFound,
+}
+
+impl From<diesel::result::Error> for IndexerError {
+    fn from(value: diesel::result::Error) -> Self {
+        Self::FailedToQueryDb(value)
+    }
 }
 
 impl IntoResponse for IndexerError {

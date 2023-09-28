@@ -10,8 +10,7 @@ pub async fn fail_indexer(id: Uuid) -> Result<(), IndexerError> {
     let indexer_model = indexer_repository::get(config.pool(), id).await.map_err(IndexerError::InfraError)?;
     match indexer_model.status {
         IndexerStatus::Running => (),
-        // TODO: add app level errors on the topmost level
-        _ => panic!("Cannot fail running indexer in state {}", indexer_model.status),
+        _ => return Err(IndexerError::InvalidIndexerStatus(indexer_model.status)),
     }
     indexer_repository::update_status(
         config.pool(),

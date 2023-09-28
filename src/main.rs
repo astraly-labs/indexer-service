@@ -1,7 +1,10 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use deadpool_diesel::postgres::Pool;
+use diesel::Connection;
+use diesel_async::async_connection_wrapper::AsyncConnectionWrapper;
+use diesel_async::pooled_connection::deadpool::Pool;
+use diesel_async::AsyncPgConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use errors::AppError;
 
@@ -36,7 +39,7 @@ pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
 #[derive(Clone)]
 pub struct AppState {
-    pool: Arc<Pool>,
+    pool: Arc<Pool<AsyncPgConnection>>,
 }
 
 #[tokio::main]
@@ -45,7 +48,7 @@ async fn main() -> Result<(), AppError> {
 
     let config = config().await;
 
-    run_migrations(config.pool()).await;
+    run_migrations(config.db_url().to_string()).await;
 
     let state = AppState { pool: Arc::clone(config.pool()) };
 
@@ -75,10 +78,11 @@ fn init_tracing() {
     tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).with_target(false).init();
 }
 
-async fn run_migrations(pool: &Pool) {
-    let conn = pool.get().await.expect("Failed to get a connection from the pool");
-    conn.interact(|conn| conn.run_pending_migrations(MIGRATIONS).map(|_| ()))
-        .await
-        .expect("Failed to run pending migrations")
-        .expect("Failed to interact with the database");
+async fn run_migrations(db_url: String) {
+    let _ = tokio::task::spawn_blocking(move || {
+        let mut conn = AsyncConnectionWrapper::<AsyncPgConnection>::establish(&db_url)?;
+        let _ = conn.run_pending_migrations(MIGRATIONS).map(|_| ());
+        Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+    })
+    .await;
 }

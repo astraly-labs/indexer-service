@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use aws_sdk_s3::Client as S3Client;
 use aws_sdk_sqs::Client as SqsClient;
-use deadpool_diesel::postgres::{Manager, Pool};
+use diesel_async::pooled_connection::deadpool::Pool;
+use diesel_async::pooled_connection::AsyncDieselConnectionManager;
+use diesel_async::AsyncPgConnection;
 use dotenvy::dotenv;
 use tokio::sync::OnceCell;
 
@@ -22,7 +24,8 @@ pub struct Config {
     server: ServerConfig,
     sqs_client: SqsClient,
     s3_client: S3Client,
-    pool: Arc<Pool>,
+    pool: Arc<Pool<AsyncPgConnection>>,
+    db_config: DatabaseConfig,
 }
 
 impl Config {
@@ -42,8 +45,12 @@ impl Config {
         &self.s3_client
     }
 
-    pub fn pool(&self) -> &Arc<Pool> {
+    pub fn pool(&self) -> &Arc<Pool<AsyncPgConnection>> {
         &self.pool
+    }
+
+    pub fn db_url(&self) -> &str {
+        &self.db_config.url
     }
 }
 
@@ -69,10 +76,11 @@ async fn init_config() -> Config {
     // init AWS S3 client
     let s3_client = S3Client::new(&shared_config);
 
-    let manager = Manager::new(database_config.url.to_string(), deadpool_diesel::Runtime::Tokio1);
+    // create a new connection pool with the default config
+    let manager = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(database_config.url.to_string());
     let pool = Pool::builder(manager).build().unwrap();
 
-    Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool) }
+    Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
 }
 
 pub async fn config() -> &'static Config {

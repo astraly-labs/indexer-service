@@ -15,8 +15,7 @@ pub async fn stop_indexer(
     let indexer_model = indexer_repository::get(&state.pool, id).await.map_err(IndexerError::InfraError)?;
     match indexer_model.status {
         IndexerStatus::Running => (),
-        // TODO: add app level errors on the topmost level
-        _ => panic!("Cannot stop indexer in state {}", indexer_model.status),
+        _ => return Err(IndexerError::InvalidIndexerStatus(indexer_model.status)),
     }
 
     let indexer = get_indexer_handler(&indexer_model.indexer_type);
