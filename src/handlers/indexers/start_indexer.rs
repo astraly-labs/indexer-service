@@ -23,6 +23,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     match indexer_model.status {
         IndexerStatus::Created => (),
         IndexerStatus::Stopped => (),
+        IndexerStatus::FailedRunning => (),
         IndexerStatus::Running => {
             // it's possible that the indexer is in the running state but the process isn't running
             // this can happen when the service restarts in an new machine but the process was still
