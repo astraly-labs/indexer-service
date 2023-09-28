@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+use axum::async_trait;
 use diesel::{ExpressionMethods, Insertable, QueryDsl, Queryable, Selectable, SelectableHelper};
 use diesel_async::pooled_connection::deadpool::Pool;
 use diesel_async::{AsyncPgConnection, RunQueryDsl};
@@ -51,7 +52,55 @@ pub struct UpdateIndexerStatusAndProcessIdDb {
     pub process_id: i64,
 }
 
-pub async fn _insert(pool: &Pool<AsyncPgConnection>, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError> {
+#[async_trait]
+pub trait Repository {
+    async fn insert(&self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError>;
+    async fn get(&self, id: Uuid) -> Result<IndexerModel, InfraError>;
+    async fn get_all(&self, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError>;
+    async fn update_status(&self, indexer: UpdateIndexerStatusDb) -> Result<IndexerModel, InfraError>;
+    async fn update_status_and_process_id(
+        &self,
+        indexer: UpdateIndexerStatusAndProcessIdDb,
+    ) -> Result<IndexerModel, InfraError>;
+}
+
+pub struct IndexerRepository<'a> {
+    pool: &'a Pool<AsyncPgConnection>,
+}
+
+impl IndexerRepository<'_> {
+    pub fn new(pool: &Pool<AsyncPgConnection>) -> IndexerRepository {
+        IndexerRepository { pool }
+    }
+}
+
+#[async_trait]
+impl Repository for IndexerRepository<'_> {
+    async fn insert(&self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError> {
+        _insert(self.pool, new_indexer).await
+    }
+
+    async fn get(&self, id: Uuid) -> Result<IndexerModel, InfraError> {
+        get(self.pool, id).await
+    }
+
+    async fn get_all(&self, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError> {
+        get_all(self.pool, filter).await
+    }
+
+    async fn update_status(&self, indexer: UpdateIndexerStatusDb) -> Result<IndexerModel, InfraError> {
+        update_status(self.pool, indexer).await
+    }
+
+    async fn update_status_and_process_id(
+        &self,
+        indexer: UpdateIndexerStatusAndProcessIdDb,
+    ) -> Result<IndexerModel, InfraError> {
+        update_status_and_process_id(self.pool, indexer).await
+    }
+}
+
+async fn _insert(pool: &Pool<AsyncPgConnection>, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError> {
     let mut conn = pool.get().await?;
     let res = diesel::insert_into(indexers::table)
         .values(new_indexer)
@@ -64,7 +113,7 @@ pub async fn _insert(pool: &Pool<AsyncPgConnection>, new_indexer: NewIndexerDb) 
     Ok(res)
 }
 
-pub async fn get(pool: &Pool<AsyncPgConnection>, id: Uuid) -> Result<IndexerModel, InfraError> {
+async fn get(pool: &Pool<AsyncPgConnection>, id: Uuid) -> Result<IndexerModel, InfraError> {
     let mut conn = pool.get().await?;
     let res = indexers::table
         .filter(indexers::id.eq(id))
@@ -77,7 +126,7 @@ pub async fn get(pool: &Pool<AsyncPgConnection>, id: Uuid) -> Result<IndexerMode
     Ok(res)
 }
 
-pub async fn get_all(pool: &Pool<AsyncPgConnection>, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError> {
+async fn get_all(pool: &Pool<AsyncPgConnection>, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError> {
     let mut conn = pool.get().await?;
     let mut query = indexers::table.into_boxed::<diesel::pg::Pg>();
     if let Some(status) = filter.status {
@@ -94,7 +143,7 @@ pub async fn get_all(pool: &Pool<AsyncPgConnection>, filter: IndexerFilter) -> R
     Ok(posts)
 }
 
-pub async fn update_status(
+async fn update_status(
     pool: &Pool<AsyncPgConnection>,
     indexer: UpdateIndexerStatusDb,
 ) -> Result<IndexerModel, InfraError> {
@@ -110,7 +159,7 @@ pub async fn update_status(
     Ok(res)
 }
 
-pub async fn update_status_and_process_id(
+async fn update_status_and_process_id(
     pool: &Pool<AsyncPgConnection>,
     indexer: UpdateIndexerStatusAndProcessIdDb,
 ) -> Result<IndexerModel, InfraError> {

@@ -32,6 +32,9 @@ mod infra;
 pub mod publishers;
 /// Route endpoints definitions
 mod routes;
+/// Tests
+#[cfg(test)]
+mod tests;
 /// Utilities
 mod utils;
 
