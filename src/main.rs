@@ -1,14 +1,15 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use diesel::Connection;
+use diesel::{Connection, ConnectionError};
 use diesel_async::async_connection_wrapper::AsyncConnectionWrapper;
 use diesel_async::pooled_connection::deadpool::Pool;
 use diesel_async::AsyncPgConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use errors::AppError;
+use rustls::Error;
 
-use crate::config::config;
+use crate::config::{config, establish_connection};
 use crate::consumers::init_consumers;
 use crate::errors::internal_error;
 use crate::handlers::indexers::start_indexer::start_all_indexers;
@@ -78,11 +79,12 @@ fn init_tracing() {
     tracing_subscriber::fmt().with_max_level(tracing::Level::INFO).with_target(false).init();
 }
 
-async fn run_migrations(db_url: String) {
+async fn run_migrations(db_url: String) -> Result<(), ConnectionError> {
+    let async_connection = establish_connection(db_url.as_str()).await?;
+    let mut async_wrapper: AsyncConnectionWrapper<AsyncPgConnection> = AsyncConnectionWrapper::from(async_connection);
     let _ = tokio::task::spawn_blocking(move || {
-        let mut conn = AsyncConnectionWrapper::<AsyncPgConnection>::establish(&db_url)?;
-        let _ = conn.run_pending_migrations(MIGRATIONS).map(|_| ());
-        Ok::<_, Box<dyn std::error::Error + Send + Sync>>(())
+        async_wrapper.run_pending_migrations(MIGRATIONS).unwrap();
     })
     .await;
+    Ok(())
 }
