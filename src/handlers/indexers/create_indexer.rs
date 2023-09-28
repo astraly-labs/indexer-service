@@ -24,23 +24,18 @@ struct CreateIndexerRequest {
 // not using From trait as we need async functions
 async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateIndexerRequest, IndexerError> {
     let mut create_indexer_request = CreateIndexerRequest::default();
-    loop {
-        if let Some(field) = request.next_field().await.map_err(IndexerError::FailedToReadMultipartField)? {
-            let field_name = field.name().ok_or(IndexerError::InternalServerError)?;
-            match field_name {
-                "script.js" => {
-                    create_indexer_request.data =
-                        field.bytes().await.map_err(IndexerError::FailedToReadMultipartField)?
-                }
-                "webhook_url" => {
-                    create_indexer_request.webhook_url =
-                        field.text().await.map_err(IndexerError::FailedToReadMultipartField)?
-                }
-                &_ => return Err(IndexerError::UnexpectedMultipartField(field_name.to_string())),
-            };
-        } else {
-            break;
-        }
+    while let Some(field) = request.next_field().await.map_err(IndexerError::FailedToReadMultipartField)? {
+        let field_name = field.name().ok_or(IndexerError::InternalServerError)?;
+        match field_name {
+            "script.js" => {
+                create_indexer_request.data = field.bytes().await.map_err(IndexerError::FailedToReadMultipartField)?
+            }
+            "webhook_url" => {
+                create_indexer_request.webhook_url =
+                    field.text().await.map_err(IndexerError::FailedToReadMultipartField)?
+            }
+            &_ => return Err(IndexerError::UnexpectedMultipartField(field_name.to_string())),
+        };
     }
     if create_indexer_request.data.is_empty() || create_indexer_request.webhook_url.is_empty() {
         return Err(IndexerError::FailedToBuildCreateIndexerRequest);
@@ -92,5 +87,5 @@ pub async fn create_indexer(
 
     publish_start_indexer(id).await.map_err(IndexerError::FailedToPushToQueue)?;
 
-    return Ok(Json(created_indexer));
+    Ok(Json(created_indexer))
 }
