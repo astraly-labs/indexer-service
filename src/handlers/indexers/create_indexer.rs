@@ -11,6 +11,7 @@ use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::infra::db::schema::indexers;
+use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
 use crate::publishers::indexers::publish_start_indexer;
 use crate::AppState;
@@ -71,9 +72,10 @@ pub async fn create_indexer(
                 let created_indexer: IndexerModel = diesel::insert_into(indexers::table)
                     .values(new_indexer_db)
                     .returning(IndexerDb::as_returning())
-                    .get_result(conn)
+                    .get_result::<IndexerDb>(conn)
                     .await?
-                    .into();
+                    .try_into()
+                    .map_err(|e| IndexerError::InfraError(InfraError::ParseError(e)))?;
 
                 config
                     .s3_client()

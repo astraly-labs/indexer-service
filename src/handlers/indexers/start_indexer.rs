@@ -1,8 +1,7 @@
-use axum::extract::State;
 use std::fs;
 use std::io::Write;
 
-use crate::AppState;
+use axum::extract::State;
 use uuid::Uuid;
 
 use crate::config::config;
@@ -14,6 +13,7 @@ use crate::infra::repositories::indexer_repository;
 use crate::infra::repositories::indexer_repository::{IndexerFilter, UpdateIndexerStatusAndProcessIdDb};
 use crate::publishers::indexers::publish_start_indexer;
 use crate::utils::PathExtractor;
+use crate::AppState;
 
 pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;
