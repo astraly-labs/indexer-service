@@ -66,5 +66,5 @@ pub async fn create_indexer(
         return Ok(Json(created_indexer));
     }
 
-    Ok(Json(IndexerModel::default()))
+    Err(IndexerError::NoFileFound)
 }

@@ -66,6 +66,8 @@ pub enum IndexerError {
     InvalidIndexerStatus(IndexerStatus),
     #[error("failed to query db")]
     FailedToQueryDb(diesel::result::Error),
+    #[error("no file found")]
+    NoFileFound,
 }
 
 impl From<diesel::result::Error> for IndexerError {
