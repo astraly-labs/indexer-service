@@ -1,6 +1,8 @@
+use axum::async_trait;
 use std::env;
-use std::io::{BufRead, BufReader};
-use std::process::{Command, Stdio};
+use std::process::Stdio;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command;
 
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel};
@@ -10,8 +12,9 @@ use crate::publishers::indexers::publish_failed_indexer;
 
 pub struct WebhookIndexer;
 
+#[async_trait]
 impl Indexer for WebhookIndexer {
-    fn start(&self, indexer: IndexerModel) -> u32 {
+    async fn start(&self, indexer: IndexerModel) -> u32 {
         let binary_file = format!("{}/bin/sink-webhook", env!("CARGO_MANIFEST_DIR"));
         let script_path = get_script_tmp_directory(indexer.id);
         let auth_token = env::var("APIBARA_AUTH_TOKEN").expect("APIBARA_AUTH_TOKEN is not set");
@@ -31,40 +34,52 @@ impl Indexer for WebhookIndexer {
             .spawn()
             .expect("Could not start the webhook indexer");
 
-        let id = child_handle.id();
+        let id = child_handle.id().expect("Failed to get the child process id");
+
+        let stdout = child_handle.stdout.take().expect("child did not have a handle to stdout");
+        let stderr = child_handle.stderr.take().expect("child did not have a handle to stderr");
+
+        let mut stdout_reader = BufReader::new(stdout).lines();
+        let mut stderr_reader = BufReader::new(stderr).lines();
 
         tokio::spawn(async move {
-            // all success messages are logged first, if error messages
-            // occur between success messages they won't be logged till
-            // the indexer is stopped
-            if let Some(ref mut stdout) = child_handle.stdout {
-                for line in BufReader::new(stdout).lines() {
-                    let line = line.unwrap();
-                    println!("[indexer-{}-stdout] {}", indexer.id, line);
-                }
-            }
-
-            if let Some(ref mut stderr) = child_handle.stderr {
-                for line in BufReader::new(stderr).lines() {
-                    let line = line.unwrap();
-                    println!("[indexer-{}-stderr] {}", indexer.id, line);
-                }
-            }
-
-            let exit_status = child_handle.wait();
-            if exit_status.unwrap().success() {
-                tracing::info!("Child process exited successfully {}", indexer.id);
-            } else {
-                tracing::error!("Child process exited with an error {}", indexer.id);
-                // TODO: safe to unwrap here?
-                publish_failed_indexer(indexer.id).await.unwrap();
+            loop {
+                tokio::select! {
+                    result = stdout_reader.next_line() => {
+                        match result {
+                            Ok(Some(line)) => tracing::info!("[indexer-{}-stdout] {}", indexer.id, line),
+                            Err(_) => (), // we will break on .wait
+                            _ => ()
+                        }
+                    }
+                    result = stderr_reader.next_line() => {
+                        match result {
+                            Ok(Some(line)) => tracing::info!("[indexer-{}-stderr] {}", indexer.id, line),
+                            Err(_) => (), // we will break on .wait
+                            _ => ()
+                        }
+                    }
+                    result = child_handle.wait() => {
+                        match result.unwrap().success() {
+                            true => {
+                                tracing::info!("Child process exited successfully {}", indexer.id);
+                            },
+                            false => {
+                                tracing::error!("Child process exited with an error {}", indexer.id);
+                                // TODO: safe to unwrap here?
+                                publish_failed_indexer(indexer.id).await.unwrap();
+                            }
+                        }
+                        break // child process exited
+                    }
+                };
             }
         });
 
         id
     }
 
-    fn stop(&self, indexer: IndexerModel) -> Result<(), IndexerError> {
+    async fn stop(&self, indexer: IndexerModel) -> Result<(), IndexerError> {
         let process_id = match indexer.process_id {
             Some(process_id) => process_id,
             None => panic!("Cannot stop indexer without process id"),
@@ -79,6 +94,7 @@ impl Indexer for WebhookIndexer {
             .spawn()
             .expect("Could not stop the webhook indexer")
             .wait()
+            .await
             .unwrap()
             .success();
 
@@ -88,7 +104,7 @@ impl Indexer for WebhookIndexer {
         Ok(())
     }
 
-    fn is_running(&self, indexer: IndexerModel) -> bool {
+    async fn is_running(&self, indexer: IndexerModel) -> bool {
         let process_id = match indexer.process_id {
             Some(process_id) => process_id,
             None => panic!("Cannot check is running without process id"),
@@ -104,6 +120,7 @@ impl Indexer for WebhookIndexer {
             .spawn()
             .expect("Could not check the indexer status")
             .wait()
+            .await
             .unwrap()
             .success()
     }

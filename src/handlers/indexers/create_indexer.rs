@@ -21,6 +21,12 @@ struct CreateIndexerRequest {
     data: Bytes,
 }
 
+impl CreateIndexerRequest {
+    fn is_ready(&self) -> bool {
+        !(self.webhook_url.is_empty() || self.data.is_empty())
+    }
+}
+
 // not using From trait as we need async functions
 async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateIndexerRequest, IndexerError> {
     let mut create_indexer_request = CreateIndexerRequest::default();
@@ -34,10 +40,10 @@ async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateI
                 create_indexer_request.webhook_url =
                     field.text().await.map_err(IndexerError::FailedToReadMultipartField)?
             }
-            &_ => return Err(IndexerError::UnexpectedMultipartField(field_name.to_string())),
+            _ => return Err(IndexerError::UnexpectedMultipartField(field_name.to_string())),
         };
     }
-    if create_indexer_request.data.is_empty() || create_indexer_request.webhook_url.is_empty() {
+    if create_indexer_request.is_ready() {
         return Err(IndexerError::FailedToBuildCreateIndexerRequest);
     }
     Ok(create_indexer_request)

@@ -27,7 +27,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
             // it's possible that the indexer is in the running state but the process isn't running
             // this can happen when the service restarts in an new machine but the process was still
             // marked as running on the DB
-            if indexer.is_running(indexer_model.clone()) {
+            if indexer.is_running(indexer_model.clone()).await {
                 tracing::info!("Indexer is already running, id {}", indexer_model.id);
                 return Ok(());
             }
@@ -49,7 +49,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let mut file = fs::File::create(get_script_tmp_directory(id)).map_err(IndexerError::FailedToCreateFile)?;
     file.write_all(aggregated_bytes.into_bytes().to_vec().as_slice()).map_err(IndexerError::FailedToCreateFile)?;
 
-    let process_id = indexer.start(indexer_model.clone()).into();
+    let process_id = indexer.start(indexer_model.clone()).await.into();
 
     indexer_repository::update_status_and_process_id(
         config.pool(),
