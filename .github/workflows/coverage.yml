@@ -19,8 +19,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key:
-            ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
+          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
             github.run_id }}
           fail-on-cache-miss: true
       - name: Setup build deps
@@ -34,7 +33,7 @@ jobs:
         run: |
           cargo llvm-cov clean --workspace
 
-      - name: Run llvm-cov 
+      - name: Run llvm-cov
         run: |
           cargo llvm-cov nextest --release --no-report
 
