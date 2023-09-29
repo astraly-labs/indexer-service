@@ -15,7 +15,8 @@ pub struct WebhookIndexer;
 #[async_trait]
 impl Indexer for WebhookIndexer {
     async fn start(&self, indexer: IndexerModel) -> u32 {
-        let binary_file = format!("{}/bin/sink-webhook", env!("CARGO_MANIFEST_DIR"));
+        let binary_file =
+            format!("{}/{}", env::var("BINARY_BASE_PATH").expect("BINARY_BASE_PATH is not set"), "/sink-webhook");
         let script_path = get_script_tmp_directory(indexer.id);
         let auth_token = env::var("APIBARA_AUTH_TOKEN").expect("APIBARA_AUTH_TOKEN is not set");
 
