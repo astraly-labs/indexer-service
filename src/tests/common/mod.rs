@@ -32,7 +32,7 @@ impl TestContext {
 
         // Create a new database for the test
         let query = diesel::sql_query(format!("CREATE DATABASE {}", db_name).as_str());
-        RunQueryDsl::execute(query, &mut conn).expect(format!("Could not create database {}", db_name).as_str());
+        RunQueryDsl::execute(query, &mut conn).unwrap_or_else(|_| panic!("Could not create database {}", db_name));
 
         let test_db_url = format!("{}/{}", base_url, db_name);
         let manager = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(test_db_url.clone());

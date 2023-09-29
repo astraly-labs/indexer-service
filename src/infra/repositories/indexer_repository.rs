@@ -206,57 +206,83 @@ impl TryFrom<IndexerDb> for IndexerModel {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use rstest::rstest;
 
     use super::*;
 
-    #[test]
-    fn test_from_indexer_db_to_indexer_model() {
+    #[rstest]
+    #[case("Created", Ok(IndexerStatus::Created))]
+    #[case("Running", Ok(IndexerStatus::Running))]
+    #[case("FailedRunning", Ok(IndexerStatus::FailedRunning))]
+    #[case("Stopped", Ok(IndexerStatus::Stopped))]
+    #[case("FailedStopping", Ok(IndexerStatus::FailedStopping))]
+    #[case("InvalidStatus", Err(ParseError::VariantNotFound))]
+    fn test_from_indexer_db_to_indexer_model_status(
+        #[case] status: &'static str,
+        #[case] expected_status: Result<IndexerStatus, ParseError>,
+    ) {
         let id = Uuid::new_v4();
+        let process_id = Some(1234);
+        let target_url = "http://example.com";
+        let indexer_type = "Webhook";
+
         let indexer_db = IndexerDb {
             id,
-            status: "Created".to_string(),
-            indexer_type: "Webhook".to_string(),
-            process_id: Some(1234),
-            target_url: "http://example.com".to_string(),
+            status: status.to_string(),
+            indexer_type: indexer_type.to_string(),
+            process_id,
+            target_url: target_url.to_string(),
         };
 
-        let indexer_model: IndexerModel = indexer_db.try_into().unwrap();
+        let indexer_model: Result<IndexerModel, ParseError> = indexer_db.try_into();
 
-        assert_eq!(indexer_model.id, id);
-        assert_eq!(indexer_model.status, IndexerStatus::from_str("Created").unwrap());
-        assert_eq!(indexer_model.indexer_type, IndexerType::from_str("Webhook").unwrap());
-        assert_eq!(indexer_model.process_id, Some(1234));
-        assert_eq!(indexer_model.target_url, "http://example.com".to_string());
+        match indexer_model {
+            Ok(model) => {
+                assert_eq!(model.id, id);
+                assert_eq!(model.status, expected_status.unwrap());
+                assert_eq!(model.indexer_type, IndexerType::from_str(indexer_type).unwrap());
+                assert_eq!(model.process_id, process_id);
+                assert_eq!(model.target_url, target_url.to_string());
+            }
+            Err(e) => {
+                assert_eq!(e, expected_status.unwrap_err());
+            }
+        }
     }
 
-    // You can add more tests, for example, to handle cases where the status or indexer_type strings are
-    // invalid. This will test the unwrapping and ensure that the conversion panics as expected.
-    #[test]
-    #[should_panic(expected = "VariantNotFound")]
-    fn test_invalid_status_conversion() {
+    #[rstest]
+    #[case("Webhook", Ok(IndexerType::Webhook))]
+    #[case("InvalidType", Err(ParseError::VariantNotFound))]
+    fn test_from_indexer_db_to_indexer_model_type(
+        #[case] indexer_type: &'static str,
+        #[case] expected_type: Result<IndexerType, ParseError>,
+    ) {
+        let id = Uuid::new_v4();
+        let process_id = Some(1234);
+        let target_url = "http://example.com";
+        let status = "Created";
+
         let indexer_db = IndexerDb {
-            id: Uuid::new_v4(),
-            status: "InvalidStatus".to_string(),
-            indexer_type: "Webhook".to_string(),
-            process_id: Some(1234),
-            target_url: "http://example.com".to_string(),
+            id,
+            status: status.to_string(),
+            indexer_type: indexer_type.to_string(),
+            process_id,
+            target_url: target_url.to_string(),
         };
 
-        let _: IndexerModel = indexer_db.try_into().unwrap();
-    }
+        let indexer_model: Result<IndexerModel, ParseError> = indexer_db.try_into();
 
-    #[test]
-    #[should_panic(expected = "VariantNotFound")]
-    fn test_invalid_type_conversion() {
-        let indexer_db = IndexerDb {
-            id: Uuid::new_v4(),
-            status: "Created".to_string(),
-            indexer_type: "InvalidType".to_string(),
-            process_id: Some(1234),
-            target_url: "http://example.com".to_string(),
-        };
-
-        let _: IndexerModel = indexer_db.try_into().unwrap();
+        match indexer_model {
+            Ok(model) => {
+                assert_eq!(model.id, id);
+                assert_eq!(model.status, IndexerStatus::from_str(status).unwrap());
+                assert_eq!(model.indexer_type, expected_type.unwrap());
+                assert_eq!(model.process_id, process_id);
+                assert_eq!(model.target_url, target_url.to_string());
+            }
+            Err(e) => {
+                assert_eq!(e, expected_type.unwrap_err());
+            }
+        }
     }
 }
