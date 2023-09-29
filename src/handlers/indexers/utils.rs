@@ -7,5 +7,5 @@ pub fn get_s3_script_key(id: Uuid) -> String {
 }
 
 pub fn get_script_tmp_directory(id: Uuid) -> String {
-    format!("{}/{}/{}.js", env!("CARGO_MANIFEST_DIR"), "tmp", id)
+    format!("{}/{}.js", std::env::temp_dir().to_str().unwrap(), id)
 }
