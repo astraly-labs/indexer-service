@@ -21,3 +21,8 @@ jobs:
     name: Run Cargo linters
     uses: ./.github/workflows/linters-cargo.yml
     needs: rust_build
+
+  coverage:
+    name: Run coverage
+    uses: ./.github/workflows/coverage.yml
+    needs: rust_build
