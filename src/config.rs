@@ -105,7 +105,7 @@ pub fn establish_connection(config: &str) -> BoxFuture<ConnectionResult<AsyncPgC
             tokio_postgres::connect(config, tls).await.map_err(|e| ConnectionError::BadConnection(e.to_string()))?;
         tokio::spawn(async move {
             if let Err(e) = conn.await {
-                eprintln!("Database connection: {e}");
+                tracing::error!("Database connection: {e}");
             }
         });
         AsyncPgConnection::try_from(client).await
@@ -113,6 +113,11 @@ pub fn establish_connection(config: &str) -> BoxFuture<ConnectionResult<AsyncPgC
     fut.boxed()
 }
 
+/// This function is used to load the cert file from the platform.
+/// The certs being loaded here are not the certs on AWS RDS. The signing
+/// over there is handled by the RDS proxy created on AWS. However, our connection
+/// to the proxy also needs certs otherwise we get the UnknownIssuer error. The code
+/// below loads the native certs in the system.
 fn root_certs() -> rustls::RootCertStore {
     let mut roots = rustls::RootCertStore::empty();
     let certs = rustls_native_certs::load_native_certs().expect("Certs not loadable!");
