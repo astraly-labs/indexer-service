@@ -1,6 +1,7 @@
 use crate::domain::models::indexer::{IndexerStatus, IndexerType};
 use crate::infra::repositories::indexer_repository::{
-    IndexerFilter, IndexerRepository, NewIndexerDb, Repository, UpdateIndexerStatusDb,
+    IndexerFilter, IndexerRepository, NewIndexerDb, Repository, UpdateIndexerStatusAndProcessIdDb,
+    UpdateIndexerStatusDb,
 };
 use crate::tests::common::constants::{LOCAL_DB_URL, TEST_DB_NAME};
 use crate::tests::common::TestContext;
@@ -77,6 +78,37 @@ async fn test_update_status() {
 
     // Update status in DB
     let updated = repository.update_status(UpdateIndexerStatusDb { id, status: "Running".to_string() }).await.unwrap();
+
+    assert_eq!(updated.id, id);
+    assert_eq!(updated.status, IndexerStatus::Running);
+}
+
+#[tokio::test]
+async fn test_update_status_and_process_id() {
+    let TestContext { ref pool, .. } = TestContext::new(LOCAL_DB_URL, TEST_DB_NAME).await;
+    let mut repository = IndexerRepository::new(pool);
+    let id = uuid::Uuid::new_v4();
+
+    // Insert in DB
+    let _ = repository
+        .insert(NewIndexerDb {
+            id,
+            status: "Created".to_string(),
+            indexer_type: "Webhook".to_string(),
+            target_url: "https://example.com".to_string(),
+        })
+        .await
+        .unwrap();
+
+    // Update status in DB
+    let updated = repository
+        .update_status_and_process_id(UpdateIndexerStatusAndProcessIdDb {
+            id,
+            status: "Running".to_string(),
+            process_id: 1234,
+        })
+        .await
+        .unwrap();
 
     assert_eq!(updated.id, id);
     assert_eq!(updated.status, IndexerStatus::Running);

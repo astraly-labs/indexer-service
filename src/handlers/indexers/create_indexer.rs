@@ -33,6 +33,7 @@ async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateI
     let mut create_indexer_request = CreateIndexerRequest::default();
     while let Some(field) = request.next_field().await.map_err(IndexerError::FailedToReadMultipartField)? {
         let field_name = field.name().ok_or(IndexerError::InternalServerError)?;
+        println!("field_name: {}", field_name);
         match field_name {
             "script.js" => {
                 create_indexer_request.data = field.bytes().await.map_err(IndexerError::FailedToReadMultipartField)?

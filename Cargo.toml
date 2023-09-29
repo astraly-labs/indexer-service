@@ -8,7 +8,7 @@ edition = "2021"
 aws-config = "0.56.1"
 aws-sdk-s3 = "0.30.0"
 aws-sdk-sqs = "0.30.0"
-axum = { version = "0.6", features = ["macros", "multipart"] }
+axum = { version = "0.6", features = ["macros", "multipart", "tokio"] }
 axum-macros = "0.3"
 chrono = { version = "0.4.26", features = ["serde"] }
 deadpool-diesel = { version = "0.4", features = ["postgres"] }
@@ -36,9 +36,16 @@ tokio = { version = "1.0", features = [
   "macros",
   "rt-multi-thread",
   "process",
+  "full",
 ] }
 tokio-postgres = "0.7.7"
 tokio-postgres-rustls = "0.9.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.4", features = ["fast-rng", "v4", "serde"] }
+tower-http = { version = "0.4.0", features = ["trace"] }
+hyper = { version = "0.14", features = ["full"] }
+mime = "0.3"
+
+[dev-dependencies]
+tower = { version = "0.4", features = ["util"] }
