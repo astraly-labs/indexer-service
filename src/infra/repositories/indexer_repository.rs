@@ -54,12 +54,12 @@ pub struct UpdateIndexerStatusAndProcessIdDb {
 
 #[async_trait]
 pub trait Repository {
-    async fn insert(&self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError>;
+    async fn insert(&mut self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError>;
     async fn get(&self, id: Uuid) -> Result<IndexerModel, InfraError>;
     async fn get_all(&self, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError>;
-    async fn update_status(&self, indexer: UpdateIndexerStatusDb) -> Result<IndexerModel, InfraError>;
+    async fn update_status(&mut self, indexer: UpdateIndexerStatusDb) -> Result<IndexerModel, InfraError>;
     async fn update_status_and_process_id(
-        &self,
+        &mut self,
         indexer: UpdateIndexerStatusAndProcessIdDb,
     ) -> Result<IndexerModel, InfraError>;
 }
@@ -76,7 +76,7 @@ impl IndexerRepository<'_> {
 
 #[async_trait]
 impl Repository for IndexerRepository<'_> {
-    async fn insert(&self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError> {
+    async fn insert(&mut self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError> {
         _insert(self.pool, new_indexer).await
     }
 
@@ -88,12 +88,12 @@ impl Repository for IndexerRepository<'_> {
         get_all(self.pool, filter).await
     }
 
-    async fn update_status(&self, indexer: UpdateIndexerStatusDb) -> Result<IndexerModel, InfraError> {
+    async fn update_status(&mut self, indexer: UpdateIndexerStatusDb) -> Result<IndexerModel, InfraError> {
         update_status(self.pool, indexer).await
     }
 
     async fn update_status_and_process_id(
-        &self,
+        &mut self,
         indexer: UpdateIndexerStatusAndProcessIdDb,
     ) -> Result<IndexerModel, InfraError> {
         update_status_and_process_id(self.pool, indexer).await
@@ -173,6 +173,21 @@ async fn update_status_and_process_id(
         .map_err(InfraError::ParseError)?;
 
     Ok(res)
+}
+
+impl TryFrom<NewIndexerDb> for IndexerModel {
+    type Error = ParseError;
+    fn try_from(value: NewIndexerDb) -> Result<Self, Self::Error> {
+        let model = IndexerDb {
+            id: value.id,
+            status: value.status,
+            indexer_type: value.indexer_type,
+            target_url: value.target_url,
+            process_id: None,
+        }
+        .try_into()?;
+        Ok(model)
+    }
 }
 
 impl TryFrom<IndexerDb> for IndexerModel {

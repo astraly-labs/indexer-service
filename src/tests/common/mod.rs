@@ -1,12 +1,17 @@
-use std::error::Error;
+use std::str::FromStr;
 
-use diesel::pg::Pg;
+use axum::async_trait;
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use diesel_async::pooled_connection::deadpool::Pool;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
 use diesel_async::AsyncPgConnection;
+use uuid::Uuid;
 
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
+use crate::infra::errors::InfraError;
+use crate::infra::repositories::indexer_repository::{
+    IndexerFilter, NewIndexerDb, Repository, UpdateIndexerStatusAndProcessIdDb, UpdateIndexerStatusDb,
+};
 use crate::run_migrations;
 
 // Keep the database info in mind to drop them later
@@ -31,7 +36,7 @@ impl TestContext {
         let manager = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(test_db_url.clone());
         let pool = Pool::builder(manager).build().unwrap();
 
-        run_migrations(test_db_url).await;
+        run_migrations(test_db_url).await.expect("Failed to run migrations");
 
         Self { base_url: base_url.to_string(), db_name: db_name.to_string(), pool }
     }
@@ -103,5 +108,48 @@ impl MockRepository {
                 },
             ],
         }
+    }
+}
+
+#[async_trait]
+impl Repository for MockRepository {
+    async fn insert(&mut self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError> {
+        let indexer: IndexerModel = new_indexer.try_into().map_err(InfraError::ParseError)?;
+        // Insert the indexer in the mock database
+        self.indexers.push(indexer.clone());
+        Ok(indexer)
+    }
+    async fn get(&self, id: Uuid) -> Result<IndexerModel, InfraError> {
+        let indexer = self.indexers.iter().find(|indexer| indexer.id == id);
+        if let Some(indexer) = indexer { Ok(indexer.clone()) } else { Err(InfraError::NotFound) }
+    }
+    async fn get_all(&self, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError> {
+        // Get all indexers with status filter if provided
+        let indexers = match filter.status {
+            Some(status) => self
+                .indexers
+                .iter()
+                .filter(|indexer| indexer.status == IndexerStatus::from_str(&status).unwrap())
+                .cloned()
+                .collect(),
+            None => self.indexers.clone(),
+        };
+        Ok(indexers)
+    }
+    async fn update_status(&mut self, indexer: UpdateIndexerStatusDb) -> Result<IndexerModel, InfraError> {
+        // Update the indexer in the mock database
+        let i = self.indexers.iter_mut().find(|other| indexer.id.eq(&other.id)).unwrap();
+        i.status = IndexerStatus::from_str(&indexer.status).map_err(InfraError::ParseError)?;
+        Ok(i.clone())
+    }
+    async fn update_status_and_process_id(
+        &mut self,
+        indexer: UpdateIndexerStatusAndProcessIdDb,
+    ) -> Result<IndexerModel, InfraError> {
+        // Update the indexer in the self.indexers vector
+        let i = self.indexers.iter_mut().find(|other| indexer.id.eq(&other.id)).unwrap();
+        i.status = IndexerStatus::from_str(&indexer.status).map_err(InfraError::ParseError)?;
+        i.process_id = Some(indexer.process_id);
+        Ok(i.clone())
     }
 }

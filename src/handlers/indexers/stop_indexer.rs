@@ -11,7 +11,7 @@ pub async fn stop_indexer(
     State(state): State<AppState>,
     PathExtractor(id): PathExtractor<Uuid>,
 ) -> Result<(), IndexerError> {
-    let repository = IndexerRepository::new(&state.pool);
+    let mut repository = IndexerRepository::new(&state.pool);
     let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;
     match indexer_model.status {
         IndexerStatus::Running => (),

@@ -18,7 +18,7 @@ use crate::AppState;
 
 pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;
-    let repository = IndexerRepository::new(config.pool());
+    let mut repository = IndexerRepository::new(config.pool());
     let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;
     let indexer = get_indexer_handler(&indexer_model.indexer_type);
 

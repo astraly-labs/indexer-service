@@ -6,7 +6,7 @@ use crate::infra::repositories::indexer_repository::{IndexerRepository, Reposito
 
 pub async fn fail_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;
-    let repository = IndexerRepository::new(config.pool());
+    let mut repository = IndexerRepository::new(config.pool());
     let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;
     match indexer_model.status {
         IndexerStatus::Running => (),
