@@ -1,13 +1,12 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use diesel::{Connection, ConnectionError};
+use diesel::ConnectionError;
 use diesel_async::async_connection_wrapper::AsyncConnectionWrapper;
 use diesel_async::pooled_connection::deadpool::Pool;
 use diesel_async::AsyncPgConnection;
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use errors::AppError;
-use rustls::Error;
 
 use crate::config::{config, establish_connection};
 use crate::consumers::init_consumers;
@@ -49,7 +48,7 @@ async fn main() -> Result<(), AppError> {
 
     let config = config().await;
 
-    run_migrations(config.db_url().to_string()).await;
+    run_migrations(config.db_url().to_string()).await.map_err(AppError::DbError)?;
 
     let state = AppState { pool: Arc::clone(config.pool()) };
 
