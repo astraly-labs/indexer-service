@@ -47,7 +47,7 @@ EOF
 # Download sink-webhook from the Github release
 RUN wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.0/sink-webhook-x86_64-linux.gz
 RUN gunzip sink-webhook-x86_64-linux.gz
-RUN cp sink-webhook-x86_64-linux.gz /bin/sink-webhook
+RUN cp sink-webhook-x86_64-linux /bin/sink-webhook
 
 ################################################################################
 # Create a new stage for running the application that contains the minimal
