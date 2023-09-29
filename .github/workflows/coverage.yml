@@ -52,7 +52,7 @@ jobs:
 
       - name: Run llvm-cov
         run: |
-          cargo llvm-cov nextest --release -- --test-threads=1 --no-report
+          cargo llvm-cov nextest --release --test-threads=1 --no-report
 
       - name: Generate report
         run: |
