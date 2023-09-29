@@ -3,6 +3,7 @@
 .env
 /bin/*
 /tmp/*
+.DS_Store
 
 # to keep the bin folder
 !/bin/.gitkeep
