@@ -1,10 +1,12 @@
+pub mod constants;
+
 use std::str::FromStr;
 
 use axum::async_trait;
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use diesel_async::pooled_connection::deadpool::Pool;
 use diesel_async::pooled_connection::AsyncDieselConnectionManager;
-use diesel_async::AsyncPgConnection;
+use diesel_async::{AsyncPgConnection, RunQueryDsl as AsyncRunQueryDsl};
 use uuid::Uuid;
 
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
@@ -30,11 +32,16 @@ impl TestContext {
 
         // Create a new database for the test
         let query = diesel::sql_query(format!("CREATE DATABASE {}", db_name).as_str());
-        query.execute(&mut conn).expect(format!("Could not create database {}", db_name).as_str());
+        RunQueryDsl::execute(query, &mut conn).expect(format!("Could not create database {}", db_name).as_str());
 
         let test_db_url = format!("{}/{}", base_url, db_name);
         let manager = AsyncDieselConnectionManager::<diesel_async::AsyncPgConnection>::new(test_db_url.clone());
         let pool = Pool::builder(manager).build().unwrap();
+
+        // Add uuid-ossp extension to the test database
+        let mut conn = pool.get().await.expect("Failed to get connection from pool");
+        let query = diesel::sql_query("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"");
+        AsyncRunQueryDsl::execute(query, &mut conn).await.expect("Failed to create uuid-ossp extension");
 
         run_migrations(test_db_url).await.expect("Failed to run migrations");
 
@@ -54,10 +61,10 @@ WHERE datname = '{}';",
             self.db_name
         );
 
-        diesel::sql_query(disconnect_users.as_str()).execute(&mut conn).unwrap();
+        RunQueryDsl::execute(diesel::sql_query(disconnect_users.as_str()), &mut conn).unwrap();
 
         let query = diesel::sql_query(format!("DROP DATABASE {}", self.db_name).as_str());
-        query.execute(&mut conn).expect(&format!("Couldn't drop database {}", self.db_name));
+        RunQueryDsl::execute(query, &mut conn).expect(&format!("Couldn't drop database {}", self.db_name));
     }
 }
 

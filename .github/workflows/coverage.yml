@@ -9,6 +9,22 @@ jobs:
   coverage:
     # sadly, for now we have to "rebuild" for the coverage
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -35,7 +51,7 @@ jobs:
 
       - name: Run llvm-cov
         run: |
-          cargo llvm-cov nextest --release --no-report
+          cargo llvm-cov nextest --release -- --test-threads=1 --no-report
 
       - name: Generate report
         run: |
