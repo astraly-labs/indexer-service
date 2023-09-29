@@ -1206,8 +1206,7 @@ dependencies = [
 [[package]]
 name = "diesel-async"
 version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "acada1517534c92d3f382217b485db8a8638f111b0e3f2a2a8e26165050f77be"
+source = "git+https://github.com/weiznich/diesel_async?rev=1e18b3749d36918cf35104fd883efaba8540670b#1e18b3749d36918cf35104fd883efaba8540670b"
 dependencies = [
  "async-trait",
  "deadpool",
@@ -1697,6 +1696,9 @@ dependencies = [
  "diesel-async",
  "diesel_migrations",
  "dotenvy",
+ "futures-util",
+ "rustls 0.20.9",
+ "rustls-native-certs",
  "serde",
  "serde_json",
  "sqs_worker",
@@ -1704,6 +1706,8 @@ dependencies = [
  "strum_macros",
  "thiserror",
  "tokio",
+ "tokio-postgres",
+ "tokio-postgres-rustls",
  "tracing",
  "tracing-subscriber",
  "uuid",
@@ -2762,6 +2766,20 @@ dependencies = [
  "tokio",
  "tokio-util",
  "whoami",
+]
+
+[[package]]
+name = "tokio-postgres-rustls"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "606f2b73660439474394432239c82249c0d45eb5f23d91f401be1e33590444a7"
+dependencies = [
+ "futures",
+ "ring",
+ "rustls 0.20.9",
+ "tokio",
+ "tokio-postgres",
+ "tokio-rustls 0.23.4",
 ]
 
 [[package]]

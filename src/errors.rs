@@ -1,6 +1,7 @@
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use diesel::ConnectionError;
 use serde_json::json;
 
 use crate::domain::models::indexer::IndexerError;
@@ -10,6 +11,7 @@ pub enum AppError {
     InternalServer,
     BodyParsing(String),
     Indexer(IndexerError),
+    DbError(ConnectionError),
 }
 
 pub fn internal_error<E>(_err: E) -> AppError {
@@ -22,6 +24,7 @@ impl IntoResponse for AppError {
             Self::InternalServer => (StatusCode::INTERNAL_SERVER_ERROR, String::from("Internal Server Error")),
             Self::BodyParsing(message) => (StatusCode::BAD_REQUEST, format!("Bad request error: {}", message)),
             Self::Indexer(err) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Indexer error: {}", err)),
+            Self::DbError(err) => (StatusCode::INTERNAL_SERVER_ERROR, format!("Database error: {}", err)),
         };
         (status, Json(json!({ "message": err_msg }))).into_response()
     }
