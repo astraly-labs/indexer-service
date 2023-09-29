@@ -44,14 +44,10 @@ jobs:
 
       - name: Run llvm-cov
         run: |
-          cargo llvm-cov nextest --release --test-threads=1 --no-report
-
-      - name: Generate report
-        run: |
-          cargo llvm-cov report --lcov --codecov --output-path codecov.json
+          cargo llvm-cov nextest --release --test-threads=1 --lcov --output-path lcov.info
 
       - name: Upload coverage to codecov.io
         uses: codecov/codecov-action@v3
         with:
-          files: codecov.json
+          files: lcov.info
           fail_ci_if_error: false
