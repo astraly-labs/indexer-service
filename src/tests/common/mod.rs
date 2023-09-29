@@ -64,7 +64,7 @@ WHERE datname = '{}';",
         RunQueryDsl::execute(diesel::sql_query(disconnect_users.as_str()), &mut conn).unwrap();
 
         let query = diesel::sql_query(format!("DROP DATABASE {}", self.db_name).as_str());
-        RunQueryDsl::execute(query, &mut conn).expect(&format!("Couldn't drop database {}", self.db_name));
+        RunQueryDsl::execute(query, &mut conn).unwrap_or_else(|_| panic!("Couldn't drop database {}", self.db_name));
     }
 }
 
@@ -75,7 +75,7 @@ pub struct MockRepository {
 }
 
 impl MockRepository {
-    pub fn new() -> Self {
+    pub fn _new() -> Self {
         Self {
             indexers: vec![
                 IndexerModel {
