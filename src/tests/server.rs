@@ -1,5 +1,4 @@
 use std::net::{SocketAddr, TcpListener};
-use std::path::Path;
 use std::sync::Arc;
 
 use axum::body::Body;
@@ -80,6 +79,7 @@ async fn not_found() {
 
     assert_eq!(response.status(), StatusCode::NOT_FOUND);
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    println!("{:?}", body);
     assert!(body.is_empty());
 }
 
@@ -99,11 +99,15 @@ async fn the_real_deal() {
 
     let client = hyper::Client::new();
 
-    let response =
-        client.request(Request::builder().uri(format!("http://{}", addr)).body(Body::empty()).unwrap()).await.unwrap();
+    let response = client
+        .request(Request::builder().uri(format!("http://{}/health", addr)).body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-    assert_eq!(&body[..], b"Hello, World!");
+    assert!(body.is_empty());
 }
 
 // You can use `ready()` and `call()` to avoid using `clone()`
