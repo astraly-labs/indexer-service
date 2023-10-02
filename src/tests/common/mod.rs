@@ -1,4 +1,5 @@
 pub mod constants;
+pub mod utils;
 
 use std::str::FromStr;
 
@@ -25,10 +26,9 @@ pub struct TestContext {
 
 impl TestContext {
     pub async fn new(base_url: &str, db_name: &str) -> Self {
-        // First, connect to postgres db to be able to create our test
+        // First, connect to the db to be able to create our test
         // database.
-        let postgres_url = format!("{}/postgres", base_url);
-        let mut conn = PgConnection::establish(&postgres_url).expect("Cannot connect to postgres database.");
+        let mut conn = PgConnection::establish(&base_url).expect("Cannot connect to the database.");
 
         // Create a new database for the test
         let query = diesel::sql_query(format!("CREATE DATABASE {}", db_name).as_str());
@@ -56,8 +56,8 @@ impl Drop for TestContext {
 
         let disconnect_users = format!(
             "SELECT pg_terminate_backend(pid)
-FROM pg_stat_activity
-WHERE datname = '{}';",
+            FROM pg_stat_activity
+            WHERE datname = '{}';",
             self.db_name
         );
 
