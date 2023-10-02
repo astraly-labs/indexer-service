@@ -3,12 +3,13 @@ use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, NewIndexerDb, Repository, UpdateIndexerStatusAndProcessIdDb,
     UpdateIndexerStatusDb,
 };
-use crate::tests::common::constants::{LOCAL_DB_URL, TEST_DB_NAME};
+use crate::tests::common::constants::TEST_DB_NAME;
+use crate::tests::common::utils::get_test_db_url;
 use crate::tests::common::TestContext;
 
 #[tokio::test]
 async fn test_get_indexer() {
-    let TestContext { ref pool, .. } = TestContext::new(LOCAL_DB_URL, TEST_DB_NAME).await;
+    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
 
     let mut repository = IndexerRepository::new(pool);
 
@@ -37,7 +38,7 @@ async fn test_get_indexer() {
 
 #[tokio::test]
 async fn test_insert_indexer() {
-    let TestContext { ref pool, .. } = TestContext::new(LOCAL_DB_URL, TEST_DB_NAME).await;
+    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
     let mut repository = IndexerRepository::new(pool);
     let id = uuid::Uuid::new_v4();
 
@@ -61,7 +62,7 @@ async fn test_insert_indexer() {
 
 #[tokio::test]
 async fn test_update_status() {
-    let TestContext { ref pool, .. } = TestContext::new(LOCAL_DB_URL, TEST_DB_NAME).await;
+    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
     let mut repository = IndexerRepository::new(pool);
     let id = uuid::Uuid::new_v4();
 
@@ -85,7 +86,7 @@ async fn test_update_status() {
 
 #[tokio::test]
 async fn test_update_status_and_process_id() {
-    let TestContext { ref pool, .. } = TestContext::new(LOCAL_DB_URL, TEST_DB_NAME).await;
+    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
     let mut repository = IndexerRepository::new(pool);
     let id = uuid::Uuid::new_v4();
 
@@ -116,7 +117,7 @@ async fn test_update_status_and_process_id() {
 
 #[tokio::test]
 async fn test_get_all_indexers() {
-    let TestContext { ref pool, .. } = TestContext::new(LOCAL_DB_URL, TEST_DB_NAME).await;
+    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
     let mut repository = IndexerRepository::new(pool);
 
     // Insert multiple indexers in DB
