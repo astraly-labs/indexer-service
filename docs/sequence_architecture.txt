@@ -6,13 +6,21 @@ database Database
 
 
 User -> Indexer Service: POST / {script.js}
+group transaction
+Indexer Service -> S3: Save script.js to S3
+S3 -->Indexer Service:ok
 Indexer Service ->Database: Create indexer in CREATED state
 Database -->Indexer Service: ok
+end
 Indexer Service -> SQS: queue start indexer with id X
 Indexer Service-->User:ok
 SQS -->Indexer Service: start indexer with id X
+Indexer Service->S3: get script
+S3 -->Indexer Service: script
 Indexer Service->Child Process:start apibara indexing with binary
 Child Process-->Indexer Service:ok
+Indexer Service->Database:update indexer process id
+Database-->Indexer Service:ok
 alt indexer fails
 Child Process->Indexer Service: service failed
 Indexer Service->SQS: queue fail indexer with id X
@@ -26,6 +34,15 @@ Database-->Indexer Service:process id
 Indexer Service->Child Process: terminate
 Child Process-->Indexer Service: ok
 Indexer Service->Database:mark as FailedStopping
+Database-->Indexer Service:ok
+Indexer Service-->User:ok
+else start a previously stopped indexer
+User ->Indexer Service:/start/:id
+Indexer Service->S3:get script
+S3-->Indexer Service:script
+Indexer Service->Child Process: start
+Child Process-->Indexer Service: ok
+Indexer Service->Database:mark as Running and update process Id
 Database-->Indexer Service:ok
 Indexer Service-->User:ok
 end
