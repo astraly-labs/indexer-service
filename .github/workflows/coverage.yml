@@ -10,6 +10,16 @@ jobs:
     # sadly, for now we have to "rebuild" for the coverage
     runs-on: ubuntu-latest
 
+    env:
+      HOST: 0.0.0.0
+      PORT: 8080
+      APIBARA_DNA_STREAM_URL: https://mainnet.starknet.a5a.ch
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/postgres
+      AWS_REGION: eu-west-3
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      APIBARA_AUTH_TOKEN: ${{ secrets.APIBARA_AUTH_TOKEN }}
+
     services:
       postgres:
         image: postgres:latest
