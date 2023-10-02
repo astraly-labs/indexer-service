@@ -1,6 +1,4 @@
 pub mod constants;
-/// Multipart support for Hyper Server
-pub mod multipart;
 
 use std::str::FromStr;
 

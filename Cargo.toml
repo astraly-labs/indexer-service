@@ -51,3 +51,4 @@ value-bag = "1.4.1"
 
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
+mpart-async = { version = "0.6.1", features = ["tokio"] }
