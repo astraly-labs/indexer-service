@@ -5,6 +5,7 @@ edition = "2021"
 
 
 [dependencies]
+async-std = { version = "1.5", features = ["attributes"] }
 aws-config = "0.56.1"
 aws-sdk-s3 = "0.30.0"
 aws-sdk-sqs = "0.30.0"
@@ -46,6 +47,7 @@ tower-http = { version = "0.4.0", features = ["trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.4", features = ["fast-rng", "v4", "serde"] }
+value-bag = "1.4.1"
 
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
