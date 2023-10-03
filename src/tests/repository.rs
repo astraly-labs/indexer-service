@@ -1,17 +1,15 @@
+use crate::config::init_config;
 use crate::domain::models::indexer::{IndexerStatus, IndexerType};
 use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, NewIndexerDb, Repository, UpdateIndexerStatusAndProcessIdDb,
     UpdateIndexerStatusDb,
 };
-use crate::tests::common::constants::TEST_DB_NAME;
-use crate::tests::common::utils::get_test_db_url;
-use crate::tests::common::TestContext;
 
 #[tokio::test]
 async fn test_get_indexer() {
-    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
+    let config = init_config().await;
 
-    let mut repository = IndexerRepository::new(pool);
+    let mut repository = IndexerRepository::new(config.pool());
 
     let id = uuid::Uuid::new_v4();
 
@@ -38,8 +36,8 @@ async fn test_get_indexer() {
 
 #[tokio::test]
 async fn test_insert_indexer() {
-    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
-    let mut repository = IndexerRepository::new(pool);
+    let config = init_config().await;
+    let mut repository = IndexerRepository::new(config.pool());
     let id = uuid::Uuid::new_v4();
 
     // Insert in DB
@@ -62,8 +60,8 @@ async fn test_insert_indexer() {
 
 #[tokio::test]
 async fn test_update_status() {
-    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
-    let mut repository = IndexerRepository::new(pool);
+    let config = init_config().await;
+    let mut repository = IndexerRepository::new(config.pool());
     let id = uuid::Uuid::new_v4();
 
     // Insert in DB
@@ -86,8 +84,8 @@ async fn test_update_status() {
 
 #[tokio::test]
 async fn test_update_status_and_process_id() {
-    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
-    let mut repository = IndexerRepository::new(pool);
+    let config = init_config().await;
+    let mut repository = IndexerRepository::new(config.pool());
     let id = uuid::Uuid::new_v4();
 
     // Insert in DB
@@ -117,8 +115,8 @@ async fn test_update_status_and_process_id() {
 
 #[tokio::test]
 async fn test_get_all_indexers() {
-    let TestContext { ref pool, .. } = TestContext::new(get_test_db_url().as_str(), TEST_DB_NAME).await;
-    let mut repository = IndexerRepository::new(pool);
+    let config = init_config().await;
+    let mut repository = IndexerRepository::new(config.pool());
 
     // Insert multiple indexers in DB
     for _ in 0..5 {
