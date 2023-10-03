@@ -14,5 +14,5 @@ pub fn clear_db(db_url: &str, db_name: &str) {
 
     let query = diesel::sql_query(format!("DROP DATABASE IF EXISTS {}", db_name).as_str());
     RunQueryDsl::execute(query, &mut conn)
-        .unwrap_or_else(|e| panic!("Couldn't drop database {}, error: {}", db_name, e.to_string()));
+        .unwrap_or_else(|e| panic!("Couldn't drop database {}, error: {}", db_name, e));
 }

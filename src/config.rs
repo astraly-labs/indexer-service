@@ -129,7 +129,7 @@ pub async fn init_config() -> Config {
 
     let query = diesel::sql_query(format!("CREATE DATABASE {}", TEST_DB_NAME).as_str());
     RunQueryDsl::execute(query, &mut conn)
-        .unwrap_or_else(|e| panic!("Could not create database {}, error: {}", TEST_DB_NAME, e.to_string()));
+        .unwrap_or_else(|e| panic!("Could not create database {}, error: {}", TEST_DB_NAME, e));
 
     // init database config
     let database_config = DatabaseConfig { url: format!("{}/{}", database_url, TEST_DB_NAME), root_url: database_url };
