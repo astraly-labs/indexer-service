@@ -1,7 +1,7 @@
 use diesel::{Connection, PgConnection, RunQueryDsl};
 
 pub fn clear_db(db_url: &str, db_name: &str) {
-    let mut conn = PgConnection::establish(&db_url).expect("Cannot connect to postgres database.");
+    let mut conn = PgConnection::establish(db_url).expect("Cannot connect to postgres database.");
 
     let disconnect_users = format!(
         "SELECT pg_terminate_backend(pid)

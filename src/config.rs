@@ -68,6 +68,9 @@ impl Config {
     }
 }
 
+/// We are using `ArcSwap` as it allow us to replace the new `Config` with
+/// a new one which is required when running test cases. This approach was
+/// inspired from here - https://github.com/matklad/once_cell/issues/127
 pub static CONFIG: OnceCell<ArcSwap<Config>> = OnceCell::const_new();
 
 #[cfg(not(test))]
@@ -172,6 +175,10 @@ pub async fn config() -> Guard<Arc<Config>> {
     cfg.load()
 }
 
+/// OnceCell only allows us to initialize the config once and that's how it should be on production.
+/// However, when running tests, we often want to reinitialize because we want to clear the DB and
+/// set it up again for reuse in new tests. By calling `config_force_init` we replace the already
+/// stored config inside `ArcSwap` with the new configuration and pool settings.
 #[cfg(test)]
 pub async fn config_force_init() {
     match CONFIG.get() {
