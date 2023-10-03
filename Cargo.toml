@@ -48,6 +48,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.4", features = ["fast-rng", "v4", "serde"] }
 value-bag = "1.4.1"
+arc-swap = "1.6.0"
 
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
