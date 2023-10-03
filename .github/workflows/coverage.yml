@@ -13,10 +13,10 @@ jobs:
     env:
       HOST: 0.0.0.0
       PORT: 8080
-      APIBARA_DNA_STREAM_URL: https://mainnet.starknet.a5a.ch
       DATABASE_URL: postgres://postgres:postgres@localhost:5432
       AWS_REGION: eu-west-3
       LOCALSTACK_ENDPOINT: http://localhost:4566
+      BINARY_BASE_PATH: /bin
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       APIBARA_AUTH_TOKEN: ${{ secrets.APIBARA_AUTH_TOKEN }}
@@ -48,6 +48,12 @@ jobs:
 
       - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
+
+      - name: Download sink binaries
+        run: |
+          wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.0/sink-webhook-x86_64-linux.gz
+          gunzip sink-webhook-x86_64-linux.gz
+          cp sink-webhook-x86_64-linux /bin/sink-webhook
 
       - name: Start LocalStack
         run: |
