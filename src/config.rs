@@ -4,17 +4,24 @@ use std::sync::Arc;
 use arc_swap::{ArcSwap, Guard};
 use aws_sdk_s3::Client as S3Client;
 use aws_sdk_sqs::Client as SqsClient;
-use diesel::{Connection, ConnectionError, ConnectionResult, PgConnection, RunQueryDsl};
+#[cfg(test)]
+use diesel::{Connection, PgConnection, RunQueryDsl};
+use diesel::{ConnectionError, ConnectionResult};
 use diesel_async::pooled_connection::deadpool::Pool;
 use diesel_async::pooled_connection::{AsyncDieselConnectionManager, ManagerConfig};
-use diesel_async::{AsyncPgConnection, RunQueryDsl as AsyncRunQueryDsl};
+use diesel_async::AsyncPgConnection;
+#[cfg(test)]
+use diesel_async::RunQueryDsl as AsyncRunQueryDsl;
 use dotenvy::dotenv;
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use tokio::sync::OnceCell;
 
+#[cfg(test)]
 use crate::run_migrations;
+#[cfg(test)]
 use crate::tests::common::constants::TEST_DB_NAME;
+#[cfg(test)]
 use crate::tests::common::utils::clear_db;
 
 #[derive(Debug)]
