@@ -53,7 +53,7 @@ jobs:
         run: |
           wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.0/sink-webhook-x86_64-linux.gz
           gunzip sink-webhook-x86_64-linux.gz
-          cp sink-webhook-x86_64-linux /bin/sink-webhook
+          sudo cp sink-webhook-x86_64-linux /bin/sink-webhook
 
       - name: Start LocalStack
         run: |
