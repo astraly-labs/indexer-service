@@ -20,6 +20,7 @@ RUN apt install -y libpq-dev
 
 # Install ca-certificates needed for AWS sdk
 RUN apt-get install -y --no-install-recommends ca-certificates
+RUN apt-get install -y --no-install-recommends wget
 
 
 
@@ -40,9 +41,13 @@ RUN --mount=type=bind,source=src,target=src \
 set -e
 ls -la
 cargo build --locked --release
-cp -r ./migrations /bin/migrations
 cp ./target/release/$APP_NAME /bin/server
 EOF
+
+# Download sink-webhook from the Github release
+RUN wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.0/sink-webhook-x86_64-linux.gz
+RUN gunzip sink-webhook-x86_64-linux.gz
+RUN cp sink-webhook-x86_64-linux /bin/sink-webhook
 
 ################################################################################
 # Create a new stage for running the application that contains the minimal
@@ -55,13 +60,21 @@ EOF
 # most recent version of that tag when you build your Dockerfile. If
 # reproducability is important, consider using a digest
 # (e.g., debian@sha256:ac707220fbd7b67fc19b112cee8170b41a9e97f703f588b2cdbbcdcecdd8af57).
-FROM debian:bullseye-slim AS final
+FROM debian:12-slim AS final
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/develop/develop-images/dockerfile_best-practices/#user
 ARG UID=10001
 RUN apt update
 RUN apt install -y libpq-dev
+RUN apt-get install -y procps
+
+# Copy the executable from the "build" stage.
+COPY --from=build /bin/server /bin/
+# Copy all the app binaries
+COPY --from=build /bin/sink-webhook /bin/
+RUN chmod +x /bin/sink-webhook
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 RUN adduser \
     --disabled-password \
@@ -72,11 +85,6 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 USER appuser
-
-
-# Copy the executable from the "build" stage.
-COPY --from=build /bin/server /bin/
-COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 # Expose the port that the application listens on.
 EXPOSE 8080
