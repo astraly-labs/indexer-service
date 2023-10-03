@@ -169,14 +169,6 @@ pub async fn init_config() -> Config {
     Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
 }
 
-#[cfg(test)]
-impl Drop for Config {
-    fn drop(&mut self) {
-        // we need the root db url to drop the test database
-        clear_db(self.root_db_url(), TEST_DB_NAME);
-    }
-}
-
 pub async fn config() -> Guard<Arc<Config>> {
     let cfg = CONFIG.get_or_init(|| async { ArcSwap::from_pointee(init_config().await) }).await;
     cfg.load()

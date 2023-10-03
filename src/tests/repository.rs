@@ -1,4 +1,4 @@
-use crate::config::init_config;
+use crate::config::{config, config_force_init, init_config};
 use crate::domain::models::indexer::{IndexerStatus, IndexerType};
 use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, NewIndexerDb, Repository, UpdateIndexerStatusAndProcessIdDb,
@@ -7,7 +7,8 @@ use crate::infra::repositories::indexer_repository::{
 
 #[tokio::test]
 async fn test_get_indexer() {
-    let config = init_config().await;
+    config_force_init().await;
+    let config = config().await;
 
     let mut repository = IndexerRepository::new(config.pool());
 
@@ -36,7 +37,8 @@ async fn test_get_indexer() {
 
 #[tokio::test]
 async fn test_insert_indexer() {
-    let config = init_config().await;
+    config_force_init().await;
+    let config = config().await;
     let mut repository = IndexerRepository::new(config.pool());
     let id = uuid::Uuid::new_v4();
 
@@ -60,7 +62,8 @@ async fn test_insert_indexer() {
 
 #[tokio::test]
 async fn test_update_status() {
-    let config = init_config().await;
+    config_force_init().await;
+    let config = config().await;
     let mut repository = IndexerRepository::new(config.pool());
     let id = uuid::Uuid::new_v4();
 
@@ -84,7 +87,8 @@ async fn test_update_status() {
 
 #[tokio::test]
 async fn test_update_status_and_process_id() {
-    let config = init_config().await;
+    config_force_init().await;
+    let config = config().await;
     let mut repository = IndexerRepository::new(config.pool());
     let id = uuid::Uuid::new_v4();
 
@@ -115,7 +119,8 @@ async fn test_update_status_and_process_id() {
 
 #[tokio::test]
 async fn test_get_all_indexers() {
-    let config = init_config().await;
+    config_force_init().await;
+    let config = config().await;
     let mut repository = IndexerRepository::new(config.pool());
 
     // Insert multiple indexers in DB
