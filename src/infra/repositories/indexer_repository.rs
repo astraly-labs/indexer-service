@@ -21,6 +21,7 @@ pub struct IndexerDb {
     pub indexer_type: String,
     pub process_id: Option<i64>,
     pub target_url: String,
+    pub table_name: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -35,6 +36,7 @@ pub struct NewIndexerDb {
     pub status: String,
     pub indexer_type: String,
     pub target_url: String,
+    pub table_name: Option<String>,
 }
 
 #[derive(Deserialize, Insertable)]
@@ -184,6 +186,7 @@ impl TryFrom<NewIndexerDb> for IndexerModel {
             indexer_type: value.indexer_type,
             target_url: value.target_url,
             process_id: None,
+            table_name: value.table_name,
         }
         .try_into()?;
         Ok(model)
@@ -199,6 +202,7 @@ impl TryFrom<IndexerDb> for IndexerModel {
             process_id: value.process_id,
             indexer_type: IndexerType::from_str(value.indexer_type.as_str())?,
             target_url: value.target_url,
+            table_name: value.table_name,
         };
         Ok(model)
     }
@@ -225,6 +229,7 @@ mod tests {
         let process_id = Some(1234);
         let target_url = "http://example.com";
         let indexer_type = "Webhook";
+        let table_name = "test_table";
 
         let indexer_db = IndexerDb {
             id,
@@ -232,6 +237,7 @@ mod tests {
             indexer_type: indexer_type.to_string(),
             process_id,
             target_url: target_url.to_string(),
+            table_name: Some(table_name.into()),
         };
 
         let indexer_model: Result<IndexerModel, ParseError> = indexer_db.try_into();
@@ -243,6 +249,7 @@ mod tests {
                 assert_eq!(model.indexer_type, IndexerType::from_str(indexer_type).unwrap());
                 assert_eq!(model.process_id, process_id);
                 assert_eq!(model.target_url, target_url.to_string());
+                assert_eq!(model.table_name, Some(table_name.into()));
             }
             Err(e) => {
                 assert_eq!(e, expected_status.unwrap_err());
@@ -261,6 +268,7 @@ mod tests {
         let process_id = Some(1234);
         let target_url = "http://example.com";
         let status = "Created";
+        let table_name = "test_table";
 
         let indexer_db = IndexerDb {
             id,
@@ -268,6 +276,7 @@ mod tests {
             indexer_type: indexer_type.to_string(),
             process_id,
             target_url: target_url.to_string(),
+            table_name: Some(table_name.into()),
         };
 
         let indexer_model: Result<IndexerModel, ParseError> = indexer_db.try_into();
@@ -279,6 +288,7 @@ mod tests {
                 assert_eq!(model.indexer_type, expected_type.unwrap());
                 assert_eq!(model.process_id, process_id);
                 assert_eq!(model.target_url, target_url.to_string());
+                assert_eq!(model.table_name, Some(table_name.into()));
             }
             Err(e) => {
                 assert_eq!(e, expected_type.unwrap_err());

@@ -49,7 +49,7 @@ pub async fn send_create_indexer_request(
     let mut mpart = MultipartRequest::default();
 
     mpart.add_file("script.js", script_path);
-    mpart.add_field("webhook_url", WEHBHOOK_URL);
+    mpart.add_field("target_url", WEHBHOOK_URL);
 
     let response = client
         .request(

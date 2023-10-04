@@ -8,5 +8,6 @@ diesel::table! {
         indexer_type -> Varchar,
         process_id -> Nullable<Int8>,
         target_url -> Varchar,
+        table_name -> Nullable<Varchar>,
     }
 }
