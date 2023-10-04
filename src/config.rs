@@ -33,8 +33,6 @@ struct ServerConfig {
 #[derive(Debug)]
 struct DatabaseConfig {
     url: String,
-    #[cfg(test)]
-    root_url: String,
 }
 
 pub struct Config {
@@ -68,10 +66,6 @@ impl Config {
 
     pub fn db_url(&self) -> &str {
         &self.db_config.url
-    }
-    #[cfg(test)]
-    pub fn root_db_url(&self) -> &str {
-        &self.db_config.root_url
     }
 }
 
@@ -132,7 +126,7 @@ pub async fn init_config() -> Config {
         .unwrap_or_else(|e| panic!("Could not create database {}, error: {}", TEST_DB_NAME, e));
 
     // init database config
-    let database_config = DatabaseConfig { url: format!("{}/{}", database_url, TEST_DB_NAME), root_url: database_url };
+    let database_config = DatabaseConfig { url: format!("{}/{}", database_url, TEST_DB_NAME) };
 
     // create a new connection pool with the default config
     let mut config = ManagerConfig::default();
@@ -167,14 +161,6 @@ pub async fn init_config() -> Config {
     let s3_client = S3Client::from_conf(s3_config);
 
     Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
-}
-
-#[cfg(test)]
-impl Drop for Config {
-    fn drop(&mut self) {
-        // we need the root db url to drop the test database
-        clear_db(self.root_db_url(), TEST_DB_NAME);
-    }
 }
 
 pub async fn config() -> Guard<Arc<Config>> {

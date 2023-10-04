@@ -1,0 +1,1 @@
+// empty scrip which causes apibara to fail
