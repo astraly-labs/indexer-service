@@ -11,9 +11,9 @@ use tokio::process::Command;
 use uuid::Uuid;
 
 use crate::config::config;
-use crate::constants::s3::INDEXER_SERVICE_BUCKET;
+
 use crate::domain::models::indexer::IndexerModel;
-use crate::handlers::indexers::utils::get_s3_script_key;
+
 use crate::infra::repositories::indexer_repository::{IndexerRepository, Repository};
 use crate::tests::common::constants::WEHBHOOK_URL;
 

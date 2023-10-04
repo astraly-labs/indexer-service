@@ -4,13 +4,9 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::body::Body;
-use axum::http::{self, Request, StatusCode};
-use hyper::client::HttpConnector;
-use hyper::{Client, Response};
-use mpart_async::client::MultipartRequest;
+use axum::http::{Request, StatusCode};
 use rstest::*;
 use tokio::process::Command;
-use uuid::Uuid;
 
 use crate::config::{config, config_force_init};
 use crate::constants::s3::INDEXER_SERVICE_BUCKET;
@@ -18,9 +14,8 @@ use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE};
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::fail_indexer::fail_indexer;
 use crate::handlers::indexers::utils::get_s3_script_key;
-use crate::infra::repositories::indexer_repository::{IndexerRepository, Repository};
 use crate::routes::app_router;
-use crate::tests::common::constants::{BROKEN_APIBARA_SCRIPT, WEHBHOOK_URL, WORKING_APIBARA_SCRIPT};
+use crate::tests::common::constants::{BROKEN_APIBARA_SCRIPT, WORKING_APIBARA_SCRIPT};
 use crate::tests::common::utils::{
     assert_queue_contains_message_with_indexer_id, assert_s3_contains_key, get_indexer, is_process_running,
     send_create_indexer_request, send_start_indexer_request, send_stop_indexer_request,
@@ -185,7 +180,6 @@ async fn stop_indexer(#[future] setup_server: SocketAddr) {
     let addr = setup_server.await;
 
     let client = hyper::Client::new();
-    let config = config().await;
 
     // Create indexer
     let response = send_create_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;

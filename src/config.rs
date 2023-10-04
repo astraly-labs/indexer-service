@@ -33,8 +33,6 @@ struct ServerConfig {
 #[derive(Debug)]
 struct DatabaseConfig {
     url: String,
-    #[cfg(test)]
-    root_url: String,
 }
 
 pub struct Config {
@@ -68,10 +66,6 @@ impl Config {
 
     pub fn db_url(&self) -> &str {
         &self.db_config.url
-    }
-    #[cfg(test)]
-    pub fn root_db_url(&self) -> &str {
-        &self.db_config.root_url
     }
 }
 
@@ -132,7 +126,7 @@ pub async fn init_config() -> Config {
         .unwrap_or_else(|e| panic!("Could not create database {}, error: {}", TEST_DB_NAME, e));
 
     // init database config
-    let database_config = DatabaseConfig { url: format!("{}/{}", database_url, TEST_DB_NAME), root_url: database_url };
+    let database_config = DatabaseConfig { url: format!("{}/{}", database_url, TEST_DB_NAME) };
 
     // create a new connection pool with the default config
     let mut config = ManagerConfig::default();
