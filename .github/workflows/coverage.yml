@@ -56,14 +56,10 @@ jobs:
           sudo cp sink-webhook-x86_64-linux /bin/sink-webhook
 
       - name: Start LocalStack
-        run: |
-          pip install localstack awscli-local
-          docker pull localstack/localstack         
-          localstack start -d                       
-
-          echo "Waiting for LocalStack startup..."  
-          localstack wait -t 30                     
-          echo "Startup complete"
+        uses: LocalStack/setup-localstack@v0.1.2
+        with:
+          image-tag: 'latest'
+          install-awslocal: 'true'
 
       - name: Create S3 Bucket and SQS Queues
         run: |
