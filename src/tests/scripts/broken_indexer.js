@@ -1,1 +1,1 @@
-// empty scrip which causes apibara to fail
+// empty script which causes apibara to fail
