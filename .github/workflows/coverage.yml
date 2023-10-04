@@ -8,7 +8,7 @@ on:
 jobs:
   coverage:
     # sadly, for now we have to "rebuild" for the coverage
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
 
     env:
       HOST: 0.0.0.0
@@ -54,6 +54,14 @@ jobs:
           wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.0/sink-webhook-x86_64-linux.gz
           gunzip sink-webhook-x86_64-linux.gz
           sudo cp sink-webhook-x86_64-linux /bin/sink-webhook
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
 
       - name: Start LocalStack
         uses: LocalStack/setup-localstack@v0.1.2
