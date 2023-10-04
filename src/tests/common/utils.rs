@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Read;
 use std::net::SocketAddr;
 use std::process::Stdio;
 
@@ -49,6 +51,8 @@ pub async fn send_create_indexer_request(
     let mut mpart = MultipartRequest::default();
 
     println!("this is the script path - {}", String::from(env!("CARGO_MANIFEST_DIR")) + "/" + script_path);
+    let file = File::open(String::from(env!("CARGO_MANIFEST_DIR")) + "/" + script_path).unwrap();
+    println!("this is the file - {:?}", file.metadata().unwrap().len());
     mpart.add_file("script.js", String::from(env!("CARGO_MANIFEST_DIR")) + "/" + script_path);
     mpart.add_field("webhook_url", WEHBHOOK_URL);
 
