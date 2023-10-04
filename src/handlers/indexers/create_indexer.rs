@@ -54,6 +54,7 @@ pub async fn create_indexer(
     State(state): State<AppState>,
     mut request: Multipart,
 ) -> Result<Json<IndexerModel>, IndexerError> {
+    println!("Creating indexer");
     let id = Uuid::new_v4();
     let create_indexer_request = build_create_indexer_request(&mut request).await?;
     let new_indexer_db = indexer_repository::NewIndexerDb {
@@ -63,12 +64,15 @@ pub async fn create_indexer(
         target_url: create_indexer_request.webhook_url,
     };
 
+    println!("Getting config");
     let config = config().await;
+    println!("Received config");
 
     let connection = &mut state.pool.get().await.expect("Failed to get a connection from the pool");
     let created_indexer = connection
         .transaction::<_, IndexerError, _>(|conn| {
             async move {
+                println!("Inserting indexer to db");
                 let created_indexer: IndexerModel = diesel::insert_into(indexers::table)
                     .values(new_indexer_db)
                     .returning(IndexerDb::as_returning())
@@ -76,7 +80,9 @@ pub async fn create_indexer(
                     .await?
                     .try_into()
                     .map_err(|e| IndexerError::InfraError(InfraError::ParseError(e)))?;
+                println!("Inserted indexer to db");
 
+                println!("Inserting script to s3");
                 config
                     .s3_client()
                     .put_object()
@@ -86,6 +92,7 @@ pub async fn create_indexer(
                     .send()
                     .await
                     .map_err(IndexerError::FailedToUploadToS3)?;
+                println!("Inserted script to s3");
 
                 Ok(created_indexer)
             }
