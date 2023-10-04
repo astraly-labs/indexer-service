@@ -81,7 +81,7 @@ jobs:
 
       - name: Run llvm-cov
         run: |
-          cargo llvm-cov nextest --release --test-threads=1 --lcov --output-path lcov.info --success-output immediate --failure-output immediate
+          cargo test -- --test-threads=1 --nocapture
 
       - name: Upload coverage to codecov.io
         uses: codecov/codecov-action@v3
