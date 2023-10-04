@@ -107,6 +107,8 @@ async fn init_config() -> Config {
 
 #[cfg(test)]
 pub async fn init_config() -> Config {
+    use aws_config::default_provider::credentials::DefaultCredentialsChain;
+
     dotenv().ok();
     // init server config
     let server_config = ServerConfig {
@@ -154,7 +156,9 @@ pub async fn init_config() -> Config {
     let sqs_client = SqsClient::from_conf(sqs_config);
 
     // init AWS S3 client
+    let credentials_provider = DefaultCredentialsChain::builder().build().await;
     let s3_config = aws_sdk_s3::config::Builder::from(&shared_config)
+        .credentials_provider(credentials_provider)
         .endpoint_url(localstack_endpoint)
         .force_path_style(true)
         .build();

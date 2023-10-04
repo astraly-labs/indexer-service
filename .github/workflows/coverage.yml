@@ -60,6 +60,11 @@ jobs:
         with:
           image-tag: 'latest'
           install-awslocal: 'true'
+          configuration: DNS_ADDRESS=0
+
+      - name: debug
+        run: |
+          sudo lsof -i :53
 
       - name: Create S3 Bucket and SQS Queues
         run: |
