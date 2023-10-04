@@ -48,7 +48,8 @@ pub async fn send_create_indexer_request(
 ) -> Response<Body> {
     let mut mpart = MultipartRequest::default();
 
-    mpart.add_file("script.js", script_path);
+    println!("this is the script path - {}", String::from(env!("CARGO_MANIFEST_DIR")) + "/" + script_path);
+    mpart.add_file("script.js", String::from(env!("CARGO_MANIFEST_DIR")) + "/" + script_path);
     mpart.add_field("webhook_url", WEHBHOOK_URL);
 
     let response = client
