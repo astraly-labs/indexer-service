@@ -15,7 +15,7 @@ use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::fail_indexer::fail_indexer;
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::routes::app_router;
-use crate::tests::common::constants::{BROKEN_APIBARA_SCRIPT, WORKING_APIBARA_SCRIPT};
+use crate::tests::common::constants::{BROKEN_APIBARA_SCRIPT, WEHBHOOK_URL, WORKING_APIBARA_SCRIPT};
 use crate::tests::common::utils::{
     assert_queue_contains_message_with_indexer_id, assert_s3_contains_key, get_indexer, is_process_running,
     send_create_indexer_request, send_start_indexer_request, send_stop_indexer_request,
@@ -93,7 +93,7 @@ async fn create_indexer(#[future] setup_server: SocketAddr) {
 
     assert_eq!(body.status, IndexerStatus::Created);
     assert_eq!(body.indexer_type, IndexerType::Webhook);
-    assert_eq!(body.target_url, "https://webhook.site/bc2ca42e-a8b2-43cf-b95c-779fb1a6bbbb");
+    assert_eq!(body.target_url, WEHBHOOK_URL);
 
     // check if the file exists on S3
     assert_s3_contains_key(INDEXER_SERVICE_BUCKET, get_s3_script_key(body.id).as_str()).await;
@@ -232,6 +232,9 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
         .unwrap()
         .success()
     );
+
+    // sleep for 100ms to let the indexer stop.
+    tokio::time::sleep(Duration::from_millis(100)).await;
 
     // stop the indexer
     send_stop_indexer_request(client.clone(), body.id, addr).await;
