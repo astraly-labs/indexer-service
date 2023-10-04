@@ -1,3 +1,4 @@
+use aws_sdk_s3::operation::put_object::PutObjectOutput;
 use axum::body::Bytes;
 use axum::extract::{Multipart, State};
 use axum::Json;
@@ -83,7 +84,7 @@ pub async fn create_indexer(
                 println!("Inserted indexer to db");
 
                 println!("Inserting script to s3");
-                config
+                let result = config
                     .s3_client()
                     .put_object()
                     .bucket(INDEXER_SERVICE_BUCKET)
@@ -91,7 +92,14 @@ pub async fn create_indexer(
                     .body(create_indexer_request.data.into())
                     .send()
                     .await
-                    .map_err(IndexerError::FailedToUploadToS3)?;
+                    .map_err(IndexerError::FailedToUploadToS3);
+                println!("Result of inserting to s3 {:?}", result);
+                match result {
+                    Ok(_) => {}
+                    Err(_) => {
+                        return Err(result.err().unwrap());
+                    }
+                };
                 println!("Inserted script to s3");
 
                 Ok(created_indexer)
