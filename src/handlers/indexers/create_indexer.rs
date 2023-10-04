@@ -1,4 +1,3 @@
-use aws_sdk_s3::operation::put_object::PutObjectOutput;
 use axum::body::Bytes;
 use axum::extract::{Multipart, State};
 use axum::Json;
