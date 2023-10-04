@@ -55,7 +55,6 @@ pub async fn create_indexer(
     State(state): State<AppState>,
     mut request: Multipart,
 ) -> Result<Json<IndexerModel>, IndexerError> {
-    println!("Creating indexer");
     let id = Uuid::new_v4();
     let create_indexer_request = build_create_indexer_request(&mut request).await?;
     let new_indexer_db = indexer_repository::NewIndexerDb {
@@ -65,15 +64,12 @@ pub async fn create_indexer(
         target_url: create_indexer_request.webhook_url,
     };
 
-    println!("Getting config");
     let config = config().await;
-    println!("Received config");
 
     let connection = &mut state.pool.get().await.expect("Failed to get a connection from the pool");
     let created_indexer = connection
         .transaction::<_, IndexerError, _>(|conn| {
             async move {
-                println!("Inserting indexer to db");
                 let created_indexer: IndexerModel = diesel::insert_into(indexers::table)
                     .values(new_indexer_db)
                     .returning(IndexerDb::as_returning())
@@ -81,10 +77,8 @@ pub async fn create_indexer(
                     .await?
                     .try_into()
                     .map_err(|e| IndexerError::InfraError(InfraError::ParseError(e)))?;
-                println!("Inserted indexer to db");
 
-                println!("Inserting script to s3");
-                let result = config
+                config
                     .s3_client()
                     .put_object()
                     .bucket(INDEXER_SERVICE_BUCKET)
@@ -92,15 +86,7 @@ pub async fn create_indexer(
                     .body(create_indexer_request.data.into())
                     .send()
                     .await
-                    .map_err(IndexerError::FailedToUploadToS3);
-                println!("Result of inserting to s3 {:?}", result);
-                match result {
-                    Ok(_) => {}
-                    Err(_) => {
-                        return Err(result.err().unwrap());
-                    }
-                };
-                println!("Inserted script to s3");
+                    .map_err(IndexerError::FailedToUploadToS3)?;
 
                 Ok(created_indexer)
             }
