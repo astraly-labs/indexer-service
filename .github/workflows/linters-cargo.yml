@@ -6,32 +6,16 @@ on:
   workflow_call:
 
 jobs:
-  # FIXME: check why this is rebuilding the project every time
   cargo-lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Retrieve cached build
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-            github.run_id }}
-          fail-on-cache-miss: true
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}-${{
-            github.run_id }}
-            ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
-            ${{ runner.os }}-cargo
-      - name: Setup build deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y clang llvm libudev-dev protobuf-compiler
+
+      # selecting a toolchain either by action or manual `rustup` calls should happen
+      # before the plugin, as the cache uses the current rustc version as its cache key
+      - run: rustup show
+
+      - uses: Swatinem/rust-cache@v2
       - name: Format and clippy
         run: |
           cargo fmt -- --check

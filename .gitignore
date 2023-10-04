@@ -4,6 +4,7 @@
 /bin/*
 /tmp/*
 .DS_Store
+rustc-ice-*.txt
 
 # to keep the bin folder
 !/bin/.gitkeep

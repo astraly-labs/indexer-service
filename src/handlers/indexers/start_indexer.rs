@@ -1,8 +1,7 @@
-use axum::extract::State;
 use std::fs;
 use std::io::Write;
 
-use crate::AppState;
+use axum::extract::State;
 use uuid::Uuid;
 
 use crate::config::config;
@@ -10,14 +9,17 @@ use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
 use crate::handlers::indexers::indexer_types::{get_indexer_handler, Indexer};
 use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directory};
-use crate::infra::repositories::indexer_repository;
-use crate::infra::repositories::indexer_repository::{IndexerFilter, UpdateIndexerStatusAndProcessIdDb};
+use crate::infra::repositories::indexer_repository::{
+    IndexerFilter, IndexerRepository, Repository, UpdateIndexerStatusAndProcessIdDb,
+};
 use crate::publishers::indexers::publish_start_indexer;
 use crate::utils::PathExtractor;
+use crate::AppState;
 
 pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;
-    let indexer_model = indexer_repository::get(config.pool(), id).await.map_err(IndexerError::InfraError)?;
+    let mut repository = IndexerRepository::new(config.pool());
+    let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;
     let indexer = get_indexer_handler(&indexer_model.indexer_type);
 
     match indexer_model.status {
@@ -52,16 +54,14 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
 
     let process_id = indexer.start(indexer_model.clone()).await.into();
 
-    indexer_repository::update_status_and_process_id(
-        config.pool(),
-        UpdateIndexerStatusAndProcessIdDb {
+    repository
+        .update_status_and_process_id(UpdateIndexerStatusAndProcessIdDb {
             id: indexer_model.id,
             process_id,
             status: IndexerStatus::Running.to_string(),
-        },
-    )
-    .await
-    .map_err(IndexerError::InfraError)?;
+        })
+        .await
+        .map_err(IndexerError::InfraError)?;
 
     Ok(())
 }
@@ -75,10 +75,11 @@ pub async fn start_indexer_api(
 
 pub async fn start_all_indexers() -> Result<(), IndexerError> {
     let config = config().await;
-    let indexers =
-        indexer_repository::get_all(config.pool(), IndexerFilter { status: Some(IndexerStatus::Running.to_string()) })
-            .await
-            .map_err(IndexerError::InfraError)?;
+    let repository = IndexerRepository::new(config.pool());
+    let indexers = repository
+        .get_all(IndexerFilter { status: Some(IndexerStatus::Running.to_string()) })
+        .await
+        .map_err(IndexerError::InfraError)?;
 
     for indexer in indexers {
         // we can ideally check if the indexer is already running here but if there are a lot of indexers

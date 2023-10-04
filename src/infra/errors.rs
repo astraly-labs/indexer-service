@@ -1,5 +1,6 @@
 use diesel::result::Error;
 use diesel_async::pooled_connection::deadpool::PoolError;
+use strum::ParseError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum InfraError {
@@ -9,6 +10,8 @@ pub enum InfraError {
     NotFound,
     #[error("pool error: {0}")]
     PoolError(PoolError),
+    #[error("parsing failed: {0}")]
+    ParseError(ParseError),
 }
 
 impl From<Error> for InfraError {

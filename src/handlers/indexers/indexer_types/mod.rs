@@ -1,7 +1,8 @@
 pub mod webhook;
 
-use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
 use axum::async_trait;
+
+use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
 
 #[async_trait]
 pub trait Indexer {

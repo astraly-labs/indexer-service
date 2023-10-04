@@ -5,15 +5,17 @@ edition = "2021"
 
 
 [dependencies]
+async-std = { version = "1.5", features = ["attributes"] }
 aws-config = "0.56.1"
 aws-sdk-s3 = "0.30.0"
 aws-sdk-sqs = "0.30.0"
-axum = { version = "0.6", features = ["macros", "multipart"] }
+axum = { version = "0.6", features = ["macros", "multipart", "tokio"] }
 axum-macros = "0.3"
 chrono = { version = "0.4.26", features = ["serde"] }
 deadpool-diesel = { version = "0.4", features = ["postgres"] }
 diesel = { version = "2.1.0", features = ["postgres", "uuid", "serde_json"] }
 # tls support did not work at 0.4.1 but only on the latest rev
+arc-swap = "1.6.0"
 diesel-async = { git = "https://github.com/weiznich/diesel_async", rev = "1e18b3749d36918cf35104fd883efaba8540670b", features = [
   "postgres",
   "deadpool",
@@ -22,6 +24,9 @@ diesel-async = { git = "https://github.com/weiznich/diesel_async", rev = "1e18b3
 diesel_migrations = "2"
 dotenvy = "0.15"
 futures-util = "0.3.21"
+hyper = { version = "0.14", features = ["full"] }
+mime = "0.3"
+rstest = "0.18.2"
 rustls = "0.20.8"
 rustls-native-certs = "0.6.2"
 serde = { version = "1.0", features = ["derive"] }
@@ -35,9 +40,16 @@ tokio = { version = "1.0", features = [
   "macros",
   "rt-multi-thread",
   "process",
+  "full",
 ] }
 tokio-postgres = "0.7.7"
 tokio-postgres-rustls = "0.9.0"
+tower-http = { version = "0.4.0", features = ["trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.4", features = ["fast-rng", "v4", "serde"] }
+value-bag = "1.4.1"
+
+[dev-dependencies]
+tower = { version = "0.4", features = ["util"] }
+mpart-async = { version = "0.6.1", features = ["tokio"] }
