@@ -16,9 +16,9 @@ use crate::utils::env::get_environment_variable;
 
 #[async_trait]
 pub trait Indexer {
-    async fn start(&self, indexer: &IndexerModel) -> u32;
+    async fn start(&self, indexer: &IndexerModel) -> Result<u32, IndexerError>;
 
-    fn start_common(&self, binary: String, indexer: &IndexerModel, extra_args: &[&str]) -> u32 {
+    fn start_common(&self, binary: String, indexer: &IndexerModel, extra_args: &[&str]) -> Result<u32, IndexerError> {
         let script_path = get_script_tmp_directory(indexer.id);
         let auth_token = get_environment_variable("APIBARA_AUTH_TOKEN");
         let etcd_url = get_environment_variable("APIBARA_ETCD_URL");
@@ -42,7 +42,7 @@ pub trait Indexer {
             .stderr(Stdio::piped())
             .args(args)
             .spawn()
-            .unwrap_or_else(|_| panic!("Could not start indexer - {}",indexer.id));
+            .map_err(|_| IndexerError::FailedToStartIndexer(indexer_id.clone()))?;
 
         let id = child_handle.id().expect("Failed to get the child process id");
 
@@ -86,7 +86,7 @@ pub trait Indexer {
             }
         });
 
-        id
+        Ok(id)
     }
 
     #[allow(clippy::result_large_err)]

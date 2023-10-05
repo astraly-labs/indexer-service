@@ -52,7 +52,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let mut file = fs::File::create(get_script_tmp_directory(id)).map_err(IndexerError::FailedToCreateFile)?;
     file.write_all(aggregated_bytes.into_bytes().to_vec().as_slice()).map_err(IndexerError::FailedToCreateFile)?;
 
-    let process_id = indexer.start(&indexer_model).await.into();
+    let process_id = indexer.start(&indexer_model).await?.into();
 
     repository
         .update_status_and_process_id(UpdateIndexerStatusAndProcessIdDb {

@@ -59,6 +59,8 @@ pub enum IndexerError {
     FailedToPushToQueue(aws_sdk_sqs::Error),
     #[error("failed to stop indexer : {0}")]
     FailedToStopIndexer(i64),
+    #[error("failed to start indexer : {0}")]
+    FailedToStartIndexer(String),
     #[error("failed to upload to S3")]
     FailedToUploadToS3(SdkError<PutObjectError>),
     #[error("failed to get from S3")]
