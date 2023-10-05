@@ -105,7 +105,7 @@ pub trait Indexer {
                 process_id.to_string().as_str(),
             ])
             .spawn()
-            .expect(format!("Could not stop indexer - {}",indexer.id).as_str())
+            .unwrap_or_else(|_| panic!("Could not stop indexer - {}",indexer.id))
             .wait()
             .await
             .unwrap()
