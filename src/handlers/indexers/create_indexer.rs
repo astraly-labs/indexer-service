@@ -87,6 +87,7 @@ pub async fn create_indexer(
         indexer_type: create_indexer_request.indexer_type.to_string(),
         id,
         target_url: create_indexer_request.target_url,
+        table_name: create_indexer_request.table_name,
     };
 
     let config = config().await;

@@ -131,9 +131,9 @@ pub trait Indexer {
     }
 }
 
-pub fn get_indexer_handler(indexer_type: &IndexerType) -> Box<Arc<dyn Indexer>> {
+pub fn get_indexer_handler(indexer_type: &IndexerType) -> Box<dyn Indexer + Sync + Send> {
     match indexer_type {
-        IndexerType::Webhook => Box::new(Arc::new(webhook::WebhookIndexer)),
-        IndexerType::Postgres => Box::new(Arc::new(postgres::PostgresIndexer)),
+        IndexerType::Webhook => Box::new(webhook::WebhookIndexer {}),
+        IndexerType::Postgres => Box::new(postgres::PostgresIndexer {}),
     }
 }
