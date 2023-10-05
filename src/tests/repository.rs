@@ -1,5 +1,6 @@
 use crate::config::{config, config_force_init};
 use crate::domain::models::indexer::{IndexerStatus, IndexerType};
+use crate::infra::db::schema::indexers::table_name;
 use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, NewIndexerDb, Repository, UpdateIndexerStatusAndProcessIdDb,
     UpdateIndexerStatusDb,
@@ -20,7 +21,8 @@ async fn test_get_indexer() {
             id,
             status: "Created".to_string(),
             indexer_type: "Webhook".to_string(),
-            target_url: "https://example.com".to_string(), // TODO: Mock webhook and test its behavior
+            target_url: Some("https://example.com".to_string()), // TODO: Mock webhook and test its behavior
+            table_name: None,
         })
         .await
         .unwrap();
@@ -31,8 +33,9 @@ async fn test_get_indexer() {
     assert_eq!(inserted.id, id);
     assert_eq!(inserted.status, IndexerStatus::Created);
     assert_eq!(inserted.indexer_type, IndexerType::Webhook);
-    assert_eq!(inserted.target_url, "https://example.com".to_string());
+    assert_eq!(inserted.target_url, Some("https://example.com".to_string()));
     assert_eq!(inserted.process_id, None);
+    assert_eq!(inserted.table_name, None);
 }
 
 #[tokio::test]
@@ -48,7 +51,8 @@ async fn test_insert_indexer() {
             id,
             status: "Created".to_string(),
             indexer_type: "Webhook".to_string(),
-            target_url: "https://example.com".to_string(),
+            target_url: Some("https://example.com".to_string()),
+            table_name: None,
         })
         .await
         .unwrap();
@@ -56,8 +60,9 @@ async fn test_insert_indexer() {
     assert_eq!(inserted.id, id);
     assert_eq!(inserted.status, IndexerStatus::Created);
     assert_eq!(inserted.indexer_type, IndexerType::Webhook);
-    assert_eq!(inserted.target_url, "https://example.com".to_string());
+    assert_eq!(inserted.target_url, Some("https://example.com".to_string()));
     assert_eq!(inserted.process_id, None);
+    assert_eq!(inserted.table_name, None);
 }
 
 #[tokio::test]
@@ -73,7 +78,8 @@ async fn test_update_status() {
             id,
             status: "Created".to_string(),
             indexer_type: "Webhook".to_string(),
-            target_url: "https://example.com".to_string(),
+            target_url: Some("https://example.com".to_string()),
+            table_name: None,
         })
         .await
         .unwrap();
@@ -98,7 +104,8 @@ async fn test_update_status_and_process_id() {
             id,
             status: "Created".to_string(),
             indexer_type: "Webhook".to_string(),
-            target_url: "https://example.com".to_string(),
+            target_url: Some("https://example.com".to_string()),
+            table_name: None,
         })
         .await
         .unwrap();
@@ -131,7 +138,8 @@ async fn test_get_all_indexers() {
                 id,
                 status: "Created".to_string(),
                 indexer_type: "Webhook".to_string(),
-                target_url: "https://example.com".to_string(),
+                target_url: Some("https://example.com".to_string()),
+                table_name: None,
             })
             .await
             .unwrap();
@@ -143,7 +151,8 @@ async fn test_get_all_indexers() {
             id,
             status: "Running".to_string(),
             indexer_type: "Webhook".to_string(),
-            target_url: "https://example.com".to_string(),
+            target_url: Some("https://example.com".to_string()),
+            table_name: None,
         })
         .await
         .unwrap();

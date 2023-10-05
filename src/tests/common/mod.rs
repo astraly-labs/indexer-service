@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use axum::async_trait;
+use diesel::serialize::IsNull::No;
 use uuid::Uuid;
 
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
@@ -27,35 +28,40 @@ impl MockRepository {
                     status: IndexerStatus::Created,
                     indexer_type: IndexerType::Webhook,
                     process_id: None,
-                    target_url: "https://example.com".to_string(),
+                    target_url: Some("https://example.com".to_string()),
+                    table_name: None,
                 },
                 IndexerModel {
                     id: uuid::Uuid::new_v4(),
                     status: IndexerStatus::Running,
                     indexer_type: IndexerType::Webhook,
                     process_id: Some(123),
-                    target_url: "https://example.com".to_string(),
+                    target_url: Some("https://example.com".to_string()),
+                    table_name: None,
                 },
                 IndexerModel {
                     id: uuid::Uuid::new_v4(),
                     status: IndexerStatus::FailedRunning,
                     indexer_type: IndexerType::Webhook,
                     process_id: None,
-                    target_url: "https://example.com".to_string(),
+                    target_url: Some("https://example.com".to_string()),
+                    table_name: None,
                 },
                 IndexerModel {
                     id: uuid::Uuid::new_v4(),
                     status: IndexerStatus::Stopped,
                     indexer_type: IndexerType::Webhook,
                     process_id: None,
-                    target_url: "https://example.com".to_string(),
+                    target_url: Some("https://example.com".to_string()),
+                    table_name: None,
                 },
                 IndexerModel {
                     id: uuid::Uuid::new_v4(),
                     status: IndexerStatus::FailedStopping,
                     indexer_type: IndexerType::Webhook,
                     process_id: Some(123),
-                    target_url: "https://example.com".to_string(),
+                    target_url: Some("https://example.com".to_string()),
+                    table_name: None,
                 },
             ],
         }

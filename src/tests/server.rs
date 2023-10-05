@@ -93,7 +93,7 @@ async fn create_indexer(#[future] setup_server: SocketAddr) {
 
     assert_eq!(body.status, IndexerStatus::Created);
     assert_eq!(body.indexer_type, IndexerType::Webhook);
-    assert_eq!(body.target_url, WEHBHOOK_URL);
+    assert_eq!(body.target_url, Some(WEHBHOOK_URL.into()));
 
     // check if the file exists on S3
     assert_s3_contains_key(INDEXER_SERVICE_BUCKET, get_s3_script_key(body.id).as_str()).await;
@@ -234,7 +234,7 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     );
 
     // sleep for 100ms to let the indexer stop.
-    tokio::time::sleep(Duration::from_millis(100)).await;
+    tokio::time::sleep(Duration::from_millis(500)).await;
 
     // stop the indexer
     send_stop_indexer_request(client.clone(), body.id, addr).await;

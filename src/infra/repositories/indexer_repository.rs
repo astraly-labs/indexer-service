@@ -236,7 +236,7 @@ mod tests {
             status: status.to_string(),
             indexer_type: indexer_type.to_string(),
             process_id,
-            target_url: target_url.to_string(),
+            target_url: Some(target_url.to_string()),
             table_name: Some(table_name.into()),
         };
 
@@ -248,7 +248,7 @@ mod tests {
                 assert_eq!(model.status, expected_status.unwrap());
                 assert_eq!(model.indexer_type, IndexerType::from_str(indexer_type).unwrap());
                 assert_eq!(model.process_id, process_id);
-                assert_eq!(model.target_url, target_url.to_string());
+                assert_eq!(model.target_url, Some(target_url.to_string()));
                 assert_eq!(model.table_name, Some(table_name.into()));
             }
             Err(e) => {
@@ -275,7 +275,7 @@ mod tests {
             status: status.to_string(),
             indexer_type: indexer_type.to_string(),
             process_id,
-            target_url: target_url.to_string(),
+            target_url: Some(target_url.to_string()),
             table_name: Some(table_name.into()),
         };
 
@@ -287,7 +287,7 @@ mod tests {
                 assert_eq!(model.status, IndexerStatus::from_str(status).unwrap());
                 assert_eq!(model.indexer_type, expected_type.unwrap());
                 assert_eq!(model.process_id, process_id);
-                assert_eq!(model.target_url, target_url.to_string());
+                assert_eq!(model.target_url, Some(target_url.to_string()));
                 assert_eq!(model.table_name, Some(table_name.into()));
             }
             Err(e) => {
