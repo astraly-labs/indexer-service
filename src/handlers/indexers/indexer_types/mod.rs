@@ -18,6 +18,7 @@ use crate::utils::env::get_environment_variable;
 pub trait Indexer {
     async fn start(&self, indexer: &IndexerModel) -> Result<u32, IndexerError>;
 
+    #[allow(clippy::result_large_err)]
     fn start_common(&self, binary: String, indexer: &IndexerModel, extra_args: &[&str]) -> Result<u32, IndexerError> {
         let script_path = get_script_tmp_directory(indexer.id);
         let auth_token = get_environment_variable("APIBARA_AUTH_TOKEN");
