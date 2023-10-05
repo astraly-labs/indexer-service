@@ -12,7 +12,7 @@ use tokio::process::Command;
 use uuid::Uuid;
 
 use crate::config::config;
-use crate::domain::models::indexer::IndexerModel;
+use crate::domain::models::indexer::{IndexerModel, IndexerType};
 use crate::infra::repositories::indexer_repository::{IndexerRepository, Repository};
 use crate::tests::common::constants::{TABLE_NAME, WEHBHOOK_URL};
 
@@ -47,8 +47,6 @@ pub async fn send_create_indexer_request(
     mpart: MultipartRequest<FileStream>,
     addr: SocketAddr,
 ) -> Response<Body> {
-    
-
     client
         .request(
             Request::builder()
@@ -76,7 +74,7 @@ pub async fn send_create_webhook_indexer_request(
 
     mpart.add_file("script.js", script_path);
     mpart.add_field("target_url", WEHBHOOK_URL);
-    mpart.add_field("indexer_type", "Webhook");
+    mpart.add_field("indexer_type", IndexerType::Webhook.to_string().as_str());
 
     let response = send_create_indexer_request(client, mpart, addr).await;
 
@@ -99,7 +97,7 @@ pub async fn send_create_postgres_indexer_request(
 
     mpart.add_file("script.js", script_path);
     mpart.add_field("table_name", TABLE_NAME);
-    mpart.add_field("indexer_type", "Postgres");
+    mpart.add_field("indexer_type", IndexerType::Postgres.to_string().as_str());
 
     let response = send_create_indexer_request(client, mpart, addr).await;
 

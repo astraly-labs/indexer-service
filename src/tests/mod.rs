@@ -5,4 +5,3 @@ pub mod repository;
 
 #[cfg(test)]
 pub mod server;
-pub mod types;

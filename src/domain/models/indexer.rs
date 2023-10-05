@@ -7,11 +7,11 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use sqs_worker::SQSListenerClientBuilderError;
 use strum_macros::{Display, EnumString};
 use uuid::Uuid;
 
+use crate::domain::models::types::AxumErrorResponse;
 use crate::infra::errors::InfraError;
 
 #[derive(Clone, Default, Debug, PartialEq, EnumString, Serialize, Deserialize, Display)]
@@ -43,8 +43,8 @@ pub struct IndexerModel {
 
 #[derive(Debug, thiserror::Error)]
 pub enum IndexerError {
-    #[error("internal server error")]
-    InternalServerError,
+    #[error("internal server error: {0}")]
+    InternalServerError(String),
     #[error("infra error : {0}")]
     InfraError(InfraError),
     #[error("failed to read file from multipart request")]
@@ -90,7 +90,14 @@ impl IntoResponse for IndexerError {
             }
             _ => (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error: {}", self)),
         };
-        (status, Json(json!({"resource":"IndexerModel", "message": err_msg, "happened_at" : chrono::Utc::now() })))
+        (
+            status,
+            Json(AxumErrorResponse {
+                resource: "IndexerModel".into(),
+                message: err_msg,
+                happened_at: chrono::Utc::now(),
+            }),
+        )
             .into_response()
     }
 }

@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use axum::body::Bytes;
 use axum::extract::{Multipart, State};
-
 use axum::Json;
 use diesel::SelectableHelper;
 use diesel_async::scoped_futures::ScopedFutureExt;
@@ -14,7 +13,6 @@ use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::infra::db::schema::indexers;
-
 use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
 use crate::publishers::indexers::publish_start_indexer;
@@ -53,7 +51,7 @@ impl CreateIndexerRequest {
 async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateIndexerRequest, IndexerError> {
     let mut create_indexer_request = CreateIndexerRequest::default();
     while let Some(field) = request.next_field().await.map_err(IndexerError::FailedToReadMultipartField)? {
-        let field_name = field.name().ok_or(IndexerError::InternalServerError)?;
+        let field_name = field.name().ok_or(IndexerError::InternalServerError("Failed to get field name".into()))?;
         match field_name {
             "script.js" => {
                 create_indexer_request.data = field.bytes().await.map_err(IndexerError::FailedToReadMultipartField)?

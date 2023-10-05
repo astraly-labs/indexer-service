@@ -6,19 +6,19 @@ use std::process::Stdio;
 use axum::async_trait;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
+use uuid::Uuid;
 
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
-
 use crate::publishers::indexers::publish_failed_indexer;
 use crate::utils::env::get_environment_variable;
 
 #[async_trait]
 pub trait Indexer {
-    async fn start(&self, indexer: IndexerModel) -> u32;
+    async fn start(&self, indexer: &IndexerModel) -> u32;
 
-    fn start_common(&self, binary: String, indexer: IndexerModel, extra_args: Vec<&str>) -> u32 {
+    fn start_common(&self, binary: String, indexer: &IndexerModel, extra_args: &[&str]) -> u32 {
         let script_path = get_script_tmp_directory(indexer.id);
         let auth_token = get_environment_variable("APIBARA_AUTH_TOKEN");
         let etcd_url = get_environment_variable("APIBARA_ETCD_URL");
@@ -34,7 +34,7 @@ pub trait Indexer {
             "--sink-id",
             indexer_id.as_str(),
         ];
-        args.extend_from_slice(extra_args.as_slice());
+        args.extend_from_slice(extra_args);
 
         let mut child_handle = Command::new(binary)
             // Silence  stdout and stderr
@@ -57,14 +57,14 @@ pub trait Indexer {
                 tokio::select! {
                     result = stdout_reader.next_line() => {
                         match result {
-                            Ok(Some(line)) => tracing::info!("[indexer-{}-stdout] {}", indexer.id, line),
+                            Ok(Some(line)) => tracing::info!("[indexer-{}-stdout] {}", indexer_id, line),
                             Err(_) => (), // we will break on .wait
                             _ => ()
                         }
                     }
                     result = stderr_reader.next_line() => {
                         match result {
-                            Ok(Some(line)) => tracing::info!("[indexer-{}-stderr] {}", indexer.id, line),
+                            Ok(Some(line)) => tracing::info!("[indexer-{}-stderr] {}", indexer_id, line),
                             Err(_) => (), // we will break on .wait
                             _ => ()
                         }
@@ -72,12 +72,12 @@ pub trait Indexer {
                     result = child_handle.wait() => {
                         match result.unwrap().success() {
                             true => {
-                                tracing::info!("Child process exited successfully {}", indexer.id);
+                                tracing::info!("Child process exited successfully {}", indexer_id);
                             },
                             false => {
-                                tracing::error!("Child process exited with an error {}", indexer.id);
+                                tracing::error!("Child process exited with an error {}", indexer_id);
                                 // TODO: safe to unwrap here?
-                                publish_failed_indexer(indexer.id).await.unwrap();
+                                publish_failed_indexer(Uuid::parse_str(indexer_id.as_str()).expect("Invalid UUID for indexer")).await.unwrap();
                             }
                         }
                         break // child process exited
@@ -93,7 +93,9 @@ pub trait Indexer {
     async fn stop(&self, indexer: IndexerModel) -> Result<(), IndexerError> {
         let process_id = match indexer.process_id {
             Some(process_id) => process_id,
-            None => panic!("Cannot stop indexer without process id"),
+            None => {
+                return Err(IndexerError::InternalServerError("Cannot stop indexer without process id".to_string()));
+            }
         };
         let is_success = Command::new("kill")
             // Silence  stdout and stderr
@@ -114,12 +116,14 @@ pub trait Indexer {
         }
         Ok(())
     }
-    async fn is_running(&self, indexer: IndexerModel) -> bool {
+    async fn is_running(&self, indexer: IndexerModel) -> Result<bool, IndexerError> {
         let process_id = match indexer.process_id {
             Some(process_id) => process_id,
-            None => panic!("Cannot check is running without process id"),
+            None => {
+                return Err(IndexerError::InternalServerError("Cannot stop indexer without process id".to_string()));
+            }
         };
-        Command::new("ps")
+        Ok(Command::new("ps")
             // Silence  stdout and stderr
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -132,7 +136,7 @@ pub trait Indexer {
             .wait()
             .await
             .unwrap()
-            .success()
+            .success())
     }
 }
 

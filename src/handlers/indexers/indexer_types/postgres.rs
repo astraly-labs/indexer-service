@@ -8,14 +8,14 @@ pub struct PostgresIndexer;
 
 #[async_trait]
 impl Indexer for PostgresIndexer {
-    async fn start(&self, indexer: IndexerModel) -> u32 {
+    async fn start(&self, indexer: &IndexerModel) -> u32 {
         let binary_file = format!("{}/{}", get_environment_variable("BINARY_BASE_PATH"), "sink-postgres");
         let postgres_connection_string = get_environment_variable("APIBARA_POSTGRES_CONNECTION_STRING");
         let table_name = indexer.table_name.clone().expect("`table_name` not set for postgres indexer");
         self.start_common(
             binary_file,
-            indexer,
-            vec!["--connection-string", postgres_connection_string.as_str(), "--table-name", table_name.as_str()],
+            &indexer,
+            &["--connection-string", postgres_connection_string.as_str(), "--table-name", table_name.as_str()],
         )
     }
 }
