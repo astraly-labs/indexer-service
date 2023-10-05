@@ -1,6 +1,5 @@
 use crate::config::{config, config_force_init};
 use crate::domain::models::indexer::{IndexerStatus, IndexerType};
-
 use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, NewIndexerDb, Repository, UpdateIndexerStatusAndProcessIdDb,
     UpdateIndexerStatusDb,

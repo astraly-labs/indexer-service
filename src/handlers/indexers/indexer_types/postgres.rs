@@ -14,7 +14,7 @@ impl Indexer for PostgresIndexer {
         let table_name = indexer.table_name.clone().expect("`table_name` not set for postgres indexer");
         self.start_common(
             binary_file,
-            &indexer,
+            indexer,
             &["--connection-string", postgres_connection_string.as_str(), "--table-name", table_name.as_str()],
         )
     }

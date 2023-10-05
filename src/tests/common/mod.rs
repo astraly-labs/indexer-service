@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use axum::async_trait;
-
 use uuid::Uuid;
 
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
