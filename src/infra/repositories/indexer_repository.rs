@@ -20,7 +20,7 @@ pub struct IndexerDb {
     pub status: String,
     pub indexer_type: String,
     pub process_id: Option<i64>,
-    pub target_url: String,
+    pub target_url: Option<String>,
     pub table_name: Option<String>,
 }
 
@@ -35,7 +35,7 @@ pub struct NewIndexerDb {
     pub id: Uuid,
     pub status: String,
     pub indexer_type: String,
-    pub target_url: String,
+    pub target_url: Option<String>,
     pub table_name: Option<String>,
 }
 

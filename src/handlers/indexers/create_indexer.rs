@@ -22,7 +22,7 @@ use crate::AppState;
 
 #[derive(Default)]
 struct CreateIndexerRequest {
-    target_url: String,
+    target_url: Option<String>,
     data: Bytes,
     table_name: Option<String>,
     indexer_type: IndexerType,
@@ -30,7 +30,7 @@ struct CreateIndexerRequest {
 
 impl CreateIndexerRequest {
     fn is_ready(&self) -> bool {
-        if self.target_url.is_empty() || self.data.is_empty() {
+        if self.data.is_empty() {
             return false;
         }
         match self.indexer_type {
@@ -39,7 +39,11 @@ impl CreateIndexerRequest {
                     return false;
                 }
             }
-            _ => (),
+            IndexerType::Webhook => {
+                if self.target_url.is_none() {
+                    return false;
+                }
+            }
         };
         true
     }
@@ -56,7 +60,7 @@ async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateI
             }
             "target_url" => {
                 create_indexer_request.target_url =
-                    field.text().await.map_err(IndexerError::FailedToReadMultipartField)?
+                    Some(field.text().await.map_err(IndexerError::FailedToReadMultipartField)?)
             }
             "table_name" => {
                 create_indexer_request.table_name =

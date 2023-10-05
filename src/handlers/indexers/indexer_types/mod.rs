@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use axum::async_trait;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command;
+use tokio::process::{Child, Command};
 
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
@@ -18,29 +18,7 @@ use crate::publishers::indexers::publish_failed_indexer;
 pub trait Indexer {
     async fn start(&self, indexer: IndexerModel) -> u32;
 
-    async fn start_with_binary(&self, indexer: IndexerModel, binary_name: &str) -> u32 {
-        let binary_file =
-            format!("{}/{}", env::var("BINARY_BASE_PATH").expect("BINARY_BASE_PATH is not set"), binary_name);
-        let script_path = get_script_tmp_directory(indexer.id);
-        let auth_token = env::var("APIBARA_AUTH_TOKEN").expect("APIBARA_AUTH_TOKEN is not set");
-
-        let mut child_handle = Command::new(binary_file)
-            // Silence  stdout and stderr
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .args([
-                "run",
-                script_path.as_str(),
-                "--target-url",
-                indexer.target_url.as_str(),
-                "--auth-token",
-                auth_token.as_str(),
-            ])
-            .spawn()
-            .expect(format!("Could not start indexer - {}",indexer.id).as_str());
-
-        let id = child_handle.id().expect("Failed to get the child process id");
-
+    fn stream_logs(&self, mut child_handle: Child, indexer: IndexerModel) {
         let stdout = child_handle.stdout.take().expect("child did not have a handle to stdout");
         let stderr = child_handle.stderr.take().expect("child did not have a handle to stderr");
 
@@ -80,8 +58,6 @@ pub trait Indexer {
                 };
             }
         });
-
-        id
     }
 
     #[allow(clippy::result_large_err)]

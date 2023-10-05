@@ -28,7 +28,7 @@ pub enum IndexerStatus {
 pub enum IndexerType {
     #[default]
     Webhook,
-    Postgres
+    Postgres,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -37,7 +37,7 @@ pub struct IndexerModel {
     pub status: IndexerStatus,
     pub indexer_type: IndexerType,
     pub process_id: Option<i64>,
-    pub target_url: String,
+    pub target_url: Option<String>,
     pub table_name: Option<String>,
 }
 
