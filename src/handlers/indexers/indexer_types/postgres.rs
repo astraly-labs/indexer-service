@@ -19,6 +19,7 @@ impl Indexer for PostgresIndexer {
         let auth_token = env::var("APIBARA_AUTH_TOKEN").expect("APIBARA_AUTH_TOKEN is not set");
         let postgres_connection_string =
             env::var("APIBARA_POSTGRES_CONNECTION_STRING").expect("APIBARA_POSTGRES_CONNECTION_STRING is not set");
+        let etcd_url = env::var("APIBARA_ETCD_URL").expect("APIBARA_ETCD_URL is not set");
 
         let child_handle = Command::new(binary_file)
             // Silence  stdout and stderr
@@ -33,6 +34,10 @@ impl Indexer for PostgresIndexer {
                 indexer.table_name.clone().expect("`table_name` not set for postgres indexer").as_str(),
                 "--auth-token",
                 auth_token.as_str(),
+                "--persist-to-etcd",
+                etcd_url.as_str(),
+                "--sink-id",
+                indexer.id.to_string().as_str(),
             ])
             .spawn()
             .expect(format!("Could not start indexer - {}",indexer.id).as_str());
