@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::config::config;
 use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
-use crate::handlers::indexers::indexer_types::{get_indexer_handler, Indexer};
+use crate::handlers::indexers::indexer_types::get_indexer_handler;
 use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directory};
 use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, Repository, UpdateIndexerStatusAndProcessIdDb,

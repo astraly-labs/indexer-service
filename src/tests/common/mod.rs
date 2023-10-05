@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use axum::async_trait;
-use diesel::serialize::IsNull::No;
+
 use uuid::Uuid;
 
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};

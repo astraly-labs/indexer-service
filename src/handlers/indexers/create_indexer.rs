@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use axum::body::Bytes;
 use axum::extract::{Multipart, State};
-use axum::routing::get;
+
 use axum::Json;
 use diesel::SelectableHelper;
 use diesel_async::scoped_futures::ScopedFutureExt;
@@ -14,7 +14,7 @@ use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::infra::db::schema::indexers;
-use crate::infra::db::schema::indexers::indexer_type;
+
 use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
 use crate::publishers::indexers::publish_start_indexer;

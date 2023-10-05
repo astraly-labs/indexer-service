@@ -2,7 +2,7 @@ use axum::extract::State;
 use uuid::Uuid;
 
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
-use crate::handlers::indexers::indexer_types::{get_indexer_handler, Indexer};
+use crate::handlers::indexers::indexer_types::get_indexer_handler;
 use crate::infra::repositories::indexer_repository::{IndexerRepository, Repository, UpdateIndexerStatusDb};
 use crate::utils::PathExtractor;
 use crate::AppState;

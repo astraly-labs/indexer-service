@@ -1,9 +1,9 @@
 pub mod postgres;
 pub mod webhook;
 
-use std::env;
+
 use std::process::Stdio;
-use std::sync::Arc;
+
 
 use axum::async_trait;
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -11,7 +11,7 @@ use tokio::process::{Child, Command};
 
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
-use crate::handlers::indexers::utils::get_script_tmp_directory;
+
 use crate::publishers::indexers::publish_failed_indexer;
 
 #[async_trait]

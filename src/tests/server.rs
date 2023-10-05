@@ -88,7 +88,7 @@ async fn create_indexer_fails_no_script(#[future] setup_server: SocketAddr) {
     let mut mpart = MultipartRequest::default();
 
     mpart.add_field("indexer_type", "Webhook");
-    mpart.add_field("target_url", WEHBHOOK_URL.into());
+    mpart.add_field("target_url", WEHBHOOK_URL);
     let response = send_create_indexer_request(client.clone(), mpart, addr).await;
 
     assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);

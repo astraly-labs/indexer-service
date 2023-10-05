@@ -47,7 +47,9 @@ pub async fn send_create_indexer_request(
     mpart: MultipartRequest<FileStream>,
     addr: SocketAddr,
 ) -> Response<Body> {
-    let response = client
+    
+
+    client
         .request(
             Request::builder()
                 .method(http::Method::POST)
@@ -57,9 +59,7 @@ pub async fn send_create_indexer_request(
                 .unwrap(),
         )
         .await
-        .unwrap();
-
-    response
+        .unwrap()
 }
 
 /// Sends a request to create a webhook indexer with the specified script path.
