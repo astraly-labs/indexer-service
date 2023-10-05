@@ -37,7 +37,7 @@ pub trait Indexer {
                 auth_token.as_str(),
             ])
             .spawn()
-            .expect("Could not start the webhook indexer");
+            .expect(format!("Could not start indexer - {}",indexer.id).as_str());
 
         let id = child_handle.id().expect("Failed to get the child process id");
 
@@ -98,7 +98,7 @@ pub trait Indexer {
                 process_id.to_string().as_str(),
             ])
             .spawn()
-            .expect("Could not stop the webhook indexer")
+            .expect(format!("Could not stop indexer - {}",indexer.id).as_str())
             .wait()
             .await
             .unwrap()
