@@ -10,7 +10,7 @@ use tokio::process::Command;
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
-use crate::infra::db::schema::indexers::table_name;
+
 use crate::publishers::indexers::publish_failed_indexer;
 use crate::utils::env::get_environment_variable;
 
@@ -42,7 +42,7 @@ pub trait Indexer {
             .stderr(Stdio::piped())
             .args(args)
             .spawn()
-            .expect(format!("Could not start indexer - {}",indexer.id).as_str());
+            .unwrap_or_else(|_| panic!("Could not start indexer - {}",indexer.id));
 
         let id = child_handle.id().expect("Failed to get the child process id");
 

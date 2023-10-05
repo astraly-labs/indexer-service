@@ -1,3 +1,3 @@
 pub fn get_environment_variable(name: &str) -> String {
-    std::env::var(name).expect(format!("{} is not set", name).as_str())
+    std::env::var(name).unwrap_or_else(|_| panic!("{} is not set", name))
 }
