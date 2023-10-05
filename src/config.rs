@@ -23,6 +23,8 @@ use crate::run_migrations;
 use crate::tests::common::constants::TEST_DB_NAME;
 #[cfg(test)]
 use crate::tests::common::utils::clear_db;
+#[cfg(test)]
+use crate::utils::env::get_environment_variable;
 
 #[derive(Debug)]
 struct ServerConfig {
@@ -146,7 +148,7 @@ pub async fn init_config() -> Config {
     // init AWS config
     let shared_config = aws_config::from_env().load().await;
 
-    let localstack_endpoint = std::env::var("LOCALSTACK_ENDPOINT").expect("`LOCALSTACK_ENDPOINT` is not set");
+    let localstack_endpoint = get_environment_variable("LOCALSTACK_ENDPOINT");
 
     // init AWS SQS
     let sqs_config =

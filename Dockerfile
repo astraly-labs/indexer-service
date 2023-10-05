@@ -49,6 +49,11 @@ RUN wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.0/si
 RUN gunzip sink-webhook-x86_64-linux.gz
 RUN cp sink-webhook-x86_64-linux /bin/sink-webhook
 
+# Download sink-postgres from the Github release
+RUN wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.0/sink-postgres-x86_64-linux.gz
+RUN gunzip sink-postgres-x86_64-linux.gz
+RUN cp sink-postgres-x86_64-linux /bin/sink-postgres
+
 ################################################################################
 # Create a new stage for running the application that contains the minimal
 # runtime dependencies for the application. This often uses a different base
@@ -74,6 +79,8 @@ COPY --from=build /bin/server /bin/
 # Copy all the app binaries
 COPY --from=build /bin/sink-webhook /bin/
 RUN chmod +x /bin/sink-webhook
+COPY --from=build /bin/sink-postgres /bin/
+RUN chmod +x /bin/sink-postgres
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 RUN adduser \

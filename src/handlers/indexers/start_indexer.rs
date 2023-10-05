@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::config::config;
 use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
-use crate::handlers::indexers::indexer_types::{get_indexer_handler, Indexer};
+use crate::handlers::indexers::indexer_types::get_indexer_handler;
 use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directory};
 use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, Repository, UpdateIndexerStatusAndProcessIdDb,
@@ -30,7 +30,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
             // it's possible that the indexer is in the running state but the process isn't running
             // this can happen when the service restarts in an new machine but the process was still
             // marked as running on the DB
-            if indexer.is_running(indexer_model.clone()).await {
+            if indexer.is_running(indexer_model.clone()).await? {
                 tracing::info!("Indexer is already running, id {}", indexer_model.id);
                 return Ok(());
             }
@@ -52,7 +52,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let mut file = fs::File::create(get_script_tmp_directory(id)).map_err(IndexerError::FailedToCreateFile)?;
     file.write_all(aggregated_bytes.into_bytes().to_vec().as_slice()).map_err(IndexerError::FailedToCreateFile)?;
 
-    let process_id = indexer.start(indexer_model.clone()).await.into();
+    let process_id = indexer.start(&indexer_model).await?.into();
 
     repository
         .update_status_and_process_id(UpdateIndexerStatusAndProcessIdDb {

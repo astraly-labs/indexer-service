@@ -7,11 +7,11 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use sqs_worker::SQSListenerClientBuilderError;
 use strum_macros::{Display, EnumString};
 use uuid::Uuid;
 
+use crate::domain::models::types::AxumErrorResponse;
 use crate::infra::errors::InfraError;
 
 #[derive(Clone, Default, Debug, PartialEq, EnumString, Serialize, Deserialize, Display)]
@@ -28,6 +28,7 @@ pub enum IndexerStatus {
 pub enum IndexerType {
     #[default]
     Webhook,
+    Postgres,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -36,13 +37,14 @@ pub struct IndexerModel {
     pub status: IndexerStatus,
     pub indexer_type: IndexerType,
     pub process_id: Option<i64>,
-    pub target_url: String,
+    pub target_url: Option<String>,
+    pub table_name: Option<String>,
 }
 
 #[derive(Debug, thiserror::Error)]
 pub enum IndexerError {
-    #[error("internal server error")]
-    InternalServerError,
+    #[error("internal server error: {0}")]
+    InternalServerError(String),
     #[error("infra error : {0}")]
     InfraError(InfraError),
     #[error("failed to read file from multipart request")]
@@ -57,6 +59,8 @@ pub enum IndexerError {
     FailedToPushToQueue(aws_sdk_sqs::Error),
     #[error("failed to stop indexer : {0}")]
     FailedToStopIndexer(i64),
+    #[error("failed to start indexer : {0}")]
+    FailedToStartIndexer(String),
     #[error("failed to upload to S3")]
     FailedToUploadToS3(SdkError<PutObjectError>),
     #[error("failed to get from S3")]
@@ -69,6 +73,8 @@ pub enum IndexerError {
     InvalidIndexerStatus(IndexerStatus),
     #[error("failed to query db")]
     FailedToQueryDb(diesel::result::Error),
+    #[error("invalid indexer type {0}")]
+    InvalidIndexerType(String),
 }
 
 impl From<diesel::result::Error> for IndexerError {
@@ -84,9 +90,16 @@ impl IntoResponse for IndexerError {
             Self::InfraError(db_error) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error: {}", db_error))
             }
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".into()),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error: {}", self)),
         };
-        (status, Json(json!({"resource":"IndexerModel", "message": err_msg, "happened_at" : chrono::Utc::now() })))
+        (
+            status,
+            Json(AxumErrorResponse {
+                resource: "IndexerModel".into(),
+                message: err_msg,
+                happened_at: chrono::Utc::now(),
+            }),
+        )
             .into_response()
     }
 }

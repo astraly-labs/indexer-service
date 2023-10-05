@@ -3,27 +3,27 @@ use std::process::Stdio;
 use std::sync::Arc;
 use std::time::Duration;
 
-use axum::body::Body;
-use axum::http::{Request, StatusCode};
-use rstest::*;
+use axum::http::StatusCode;
+use hyper::{Body, Request};
+use mpart_async::client::MultipartRequest;
+use rstest::{fixture, rstest};
 use tokio::process::Command;
 
 use crate::config::{config, config_force_init};
-use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE};
-use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
+use crate::domain::models::indexer::{IndexerModel, IndexerStatus};
+use crate::domain::models::types::AxumErrorResponse;
 use crate::handlers::indexers::fail_indexer::fail_indexer;
-use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::routes::app_router;
 use crate::tests::common::constants::{BROKEN_APIBARA_SCRIPT, WEHBHOOK_URL, WORKING_APIBARA_SCRIPT};
 use crate::tests::common::utils::{
-    assert_queue_contains_message_with_indexer_id, assert_s3_contains_key, get_indexer, is_process_running,
-    send_create_indexer_request, send_start_indexer_request, send_stop_indexer_request,
+    assert_queue_contains_message_with_indexer_id, get_indexer, is_process_running, send_create_indexer_request,
+    send_create_webhook_indexer_request, send_start_indexer_request, send_stop_indexer_request,
 };
 use crate::AppState;
 
 #[fixture]
-async fn setup_server() -> SocketAddr {
+pub async fn setup_server() -> SocketAddr {
     config_force_init().await;
     let config = config().await;
     let state = AppState { pool: Arc::clone(config.pool()) };
@@ -76,35 +76,22 @@ async fn health(#[future] setup_server: SocketAddr) {
 
 #[rstest]
 #[tokio::test]
-async fn create_indexer(#[future] setup_server: SocketAddr) {
+async fn create_indexer_fails_no_script(#[future] setup_server: SocketAddr) {
     let addr = setup_server.await;
 
     let client = hyper::Client::new();
-    let config = config().await;
-
-    // clear the sqs queue
-    config.sqs_client().purge_queue().queue_url(START_INDEXER_QUEUE).send().await.unwrap();
 
     // Create indexer
-    let response = send_create_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+    let mut mpart = MultipartRequest::default();
 
+    mpart.add_field("indexer_type", "Webhook");
+    mpart.add_field("target_url", WEHBHOOK_URL);
+    let response = send_create_indexer_request(client.clone(), mpart, addr).await;
+
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
-    let body: IndexerModel = serde_json::from_slice(&body).unwrap();
-
-    assert_eq!(body.status, IndexerStatus::Created);
-    assert_eq!(body.indexer_type, IndexerType::Webhook);
-    assert_eq!(body.target_url, WEHBHOOK_URL);
-
-    // check if the file exists on S3
-    assert_s3_contains_key(INDEXER_SERVICE_BUCKET, get_s3_script_key(body.id).as_str()).await;
-
-    // check if the message is present on the queue
-    assert_queue_contains_message_with_indexer_id(START_INDEXER_QUEUE, body.id).await;
-
-    // check indexer is present in DB in created state
-    let indexer = get_indexer(body.id).await;
-    assert_eq!(indexer.id, body.id);
-    assert_eq!(indexer.status, IndexerStatus::Created);
+    let body: AxumErrorResponse = serde_json::from_slice(&body).unwrap();
+    assert_eq!(body.message, "Internal server error: failed to build create indexer request")
 }
 
 #[rstest]
@@ -119,7 +106,7 @@ async fn start_indexer(#[future] setup_server: SocketAddr) {
     config.sqs_client().purge_queue().queue_url(START_INDEXER_QUEUE).send().await.unwrap();
 
     // Create indexer
-    let response = send_create_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
 
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
     let body: IndexerModel = serde_json::from_slice(&body).unwrap();
@@ -148,7 +135,7 @@ async fn failed_running_indexer(#[future] setup_server: SocketAddr) {
     config.sqs_client().purge_queue().queue_url(FAILED_INDEXER_QUEUE).send().await.unwrap();
 
     // Create indexer
-    let response = send_create_indexer_request(client.clone(), BROKEN_APIBARA_SCRIPT, addr).await;
+    let response = send_create_webhook_indexer_request(client.clone(), BROKEN_APIBARA_SCRIPT, addr).await;
 
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
     let body: IndexerModel = serde_json::from_slice(&body).unwrap();
@@ -182,7 +169,7 @@ async fn stop_indexer(#[future] setup_server: SocketAddr) {
     let client = hyper::Client::new();
 
     // Create indexer
-    let response = send_create_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
 
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
     let body: IndexerModel = serde_json::from_slice(&body).unwrap();
@@ -207,7 +194,7 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     let client = hyper::Client::new();
 
     // Create indexer
-    let response = send_create_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
 
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
     let body: IndexerModel = serde_json::from_slice(&body).unwrap();
@@ -219,27 +206,24 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     let indexer = get_indexer(body.id).await;
     assert!(
         Command::new("kill")
-        // Silence  stdout and stderr
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .args([
-            indexer.process_id.unwrap().to_string().as_str(),
-        ])
-        .spawn()
-        .expect("Could not stop the webhook indexer")
-        .wait()
-        .await
-        .unwrap()
-        .success()
+            // Silence  stdout and stderr
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .args([
+                indexer.process_id.unwrap().to_string().as_str(),
+            ])
+            .spawn()
+            .expect("Could not stop the webhook indexer")
+            .wait()
+            .await
+            .unwrap()
+            .success()
     );
-
-    // sleep for 100ms to let the indexer stop.
-    tokio::time::sleep(Duration::from_millis(100)).await;
 
     // stop the indexer
     send_stop_indexer_request(client.clone(), body.id, addr).await;
 
-    // check indexer is present in DB in created state
+    // check indexer is present in DB in failed stopping state
     let indexer = get_indexer(body.id).await;
     assert_eq!(indexer.id, body.id);
     assert_eq!(indexer.status, IndexerStatus::FailedStopping);

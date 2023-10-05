@@ -55,6 +55,10 @@ jobs:
           gunzip sink-webhook-x86_64-linux.gz
           sudo cp sink-webhook-x86_64-linux /bin/sink-webhook
 
+          wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.0/sink-postgres-x86_64-linux.gz
+          gunzip sink-postgres-x86_64-linux.gz
+          sudo cp sink-postgres-x86_64-linux /bin/sink-postgres
+
       - name: Start LocalStack
         run: |
           pip install localstack awscli-local

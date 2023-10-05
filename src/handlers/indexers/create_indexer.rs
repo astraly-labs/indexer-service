@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use axum::body::Bytes;
 use axum::extract::{Multipart, State};
 use axum::Json;
@@ -18,13 +20,30 @@ use crate::AppState;
 
 #[derive(Default)]
 struct CreateIndexerRequest {
-    webhook_url: String,
+    target_url: Option<String>,
     data: Bytes,
+    table_name: Option<String>,
+    indexer_type: IndexerType,
 }
 
 impl CreateIndexerRequest {
     fn is_ready(&self) -> bool {
-        !(self.webhook_url.is_empty() || self.data.is_empty())
+        if self.data.is_empty() {
+            return false;
+        }
+        match self.indexer_type {
+            IndexerType::Postgres => {
+                if self.table_name.is_none() {
+                    return false;
+                }
+            }
+            IndexerType::Webhook => {
+                if self.target_url.is_none() {
+                    return false;
+                }
+            }
+        };
+        true
     }
 }
 
@@ -32,14 +51,23 @@ impl CreateIndexerRequest {
 async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateIndexerRequest, IndexerError> {
     let mut create_indexer_request = CreateIndexerRequest::default();
     while let Some(field) = request.next_field().await.map_err(IndexerError::FailedToReadMultipartField)? {
-        let field_name = field.name().ok_or(IndexerError::InternalServerError)?;
+        let field_name = field.name().ok_or(IndexerError::InternalServerError("Failed to get field name".into()))?;
         match field_name {
             "script.js" => {
                 create_indexer_request.data = field.bytes().await.map_err(IndexerError::FailedToReadMultipartField)?
             }
-            "webhook_url" => {
-                create_indexer_request.webhook_url =
-                    field.text().await.map_err(IndexerError::FailedToReadMultipartField)?
+            "target_url" => {
+                create_indexer_request.target_url =
+                    Some(field.text().await.map_err(IndexerError::FailedToReadMultipartField)?)
+            }
+            "table_name" => {
+                create_indexer_request.table_name =
+                    Some(field.text().await.map_err(IndexerError::FailedToReadMultipartField)?)
+            }
+            "indexer_type" => {
+                let field = field.text().await.map_err(IndexerError::FailedToReadMultipartField)?;
+                create_indexer_request.indexer_type =
+                    IndexerType::from_str(field.as_str()).map_err(|_| IndexerError::InvalidIndexerType(field))?
             }
             _ => return Err(IndexerError::UnexpectedMultipartField(field_name.to_string())),
         };
@@ -58,9 +86,10 @@ pub async fn create_indexer(
     let create_indexer_request = build_create_indexer_request(&mut request).await?;
     let new_indexer_db = indexer_repository::NewIndexerDb {
         status: IndexerStatus::Created.to_string(),
-        indexer_type: IndexerType::Webhook.to_string(),
+        indexer_type: create_indexer_request.indexer_type.to_string(),
         id,
-        target_url: create_indexer_request.webhook_url,
+        target_url: create_indexer_request.target_url,
+        table_name: create_indexer_request.table_name,
     };
 
     let config = config().await;
