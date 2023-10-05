@@ -1,10 +1,9 @@
-use std::env;
-
 use axum::async_trait;
 use sqs_worker::EnvironmentVariableCredentialsProvider;
 
 use crate::consumers::indexers::IndexerConsumers;
 use crate::domain::models::indexer::IndexerError;
+use crate::utils::env::get_environment_variable;
 
 pub mod indexers;
 
@@ -14,8 +13,8 @@ pub trait Consumers {
 }
 
 fn get_credentials() -> (EnvironmentVariableCredentialsProvider, Option<String>) {
-    let region = env::var("AWS_REGION").ok();
-    (EnvironmentVariableCredentialsProvider::new(), region)
+    let region = get_environment_variable("AWS_REGION");
+    (EnvironmentVariableCredentialsProvider::new(), Some(region))
 }
 
 /// Initialize SQS consumers

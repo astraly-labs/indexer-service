@@ -36,7 +36,7 @@ mod routes;
 #[cfg(test)]
 mod tests;
 /// Utilities
-mod utils;
+pub mod utils;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 

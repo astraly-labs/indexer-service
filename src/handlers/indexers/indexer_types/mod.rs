@@ -1,24 +1,51 @@
 pub mod postgres;
 pub mod webhook;
 
-
 use std::process::Stdio;
-
 
 use axum::async_trait;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::{Child, Command};
+use tokio::process::Command;
 
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
-
+use crate::handlers::indexers::utils::get_script_tmp_directory;
+use crate::infra::db::schema::indexers::table_name;
 use crate::publishers::indexers::publish_failed_indexer;
+use crate::utils::env::get_environment_variable;
 
 #[async_trait]
 pub trait Indexer {
     async fn start(&self, indexer: IndexerModel) -> u32;
 
-    fn stream_logs(&self, mut child_handle: Child, indexer: IndexerModel) {
+    fn start_common(&self, binary: String, indexer: IndexerModel, extra_args: Vec<&str>) -> u32 {
+        let script_path = get_script_tmp_directory(indexer.id);
+        let auth_token = get_environment_variable("APIBARA_AUTH_TOKEN");
+        let etcd_url = get_environment_variable("APIBARA_ETCD_URL");
+
+        let indexer_id = indexer.id.to_string();
+        let mut args = vec![
+            "run",
+            script_path.as_str(),
+            "--auth-token",
+            auth_token.as_str(),
+            "--persist-to-etcd",
+            etcd_url.as_str(),
+            "--sink-id",
+            indexer_id.as_str(),
+        ];
+        args.extend_from_slice(extra_args.as_slice());
+
+        let mut child_handle = Command::new(binary)
+            // Silence  stdout and stderr
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .args(args)
+            .spawn()
+            .expect(format!("Could not start indexer - {}",indexer.id).as_str());
+
+        let id = child_handle.id().expect("Failed to get the child process id");
+
         let stdout = child_handle.stdout.take().expect("child did not have a handle to stdout");
         let stderr = child_handle.stderr.take().expect("child did not have a handle to stderr");
 
@@ -58,6 +85,8 @@ pub trait Indexer {
                 };
             }
         });
+
+        id
     }
 
     #[allow(clippy::result_large_err)]
