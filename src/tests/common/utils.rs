@@ -7,13 +7,14 @@ use diesel::{Connection, PgConnection, RunQueryDsl};
 use hyper::client::HttpConnector;
 use hyper::{Body, Client};
 use mpart_async::client::MultipartRequest;
+use mpart_async::filestream::FileStream;
 use tokio::process::Command;
 use uuid::Uuid;
 
 use crate::config::config;
 use crate::domain::models::indexer::IndexerModel;
 use crate::infra::repositories::indexer_repository::{IndexerRepository, Repository};
-use crate::tests::common::constants::WEHBHOOK_URL;
+use crate::tests::common::constants::{TABLE_NAME, WEHBHOOK_URL};
 
 /// Clears the database in the specified db_url. It first closes all connections
 /// to that database as without it we get an error. The db_url must be the root db url
@@ -36,21 +37,16 @@ pub fn clear_db(db_url: &str, db_name: &str) {
         .unwrap_or_else(|e| panic!("Couldn't drop database {}, error: {}", db_name, e));
 }
 
-/// Sends a request to create the indexer with the specified script path.
+/// Sends a request to create the indexer with the specified multipart body.
 /// Arguments
 /// - client: The hyper client to use to send the request
-/// - script_path: The path to the script to use for the indexer
+/// - mpart: The multipart body to send
 /// - addr: The address of the server to send the request to
 pub async fn send_create_indexer_request(
     client: Client<HttpConnector>,
-    script_path: &str,
+    mpart: MultipartRequest<FileStream>,
     addr: SocketAddr,
 ) -> Response<Body> {
-    let mut mpart = MultipartRequest::default();
-
-    mpart.add_file("script.js", script_path);
-    mpart.add_field("target_url", WEHBHOOK_URL);
-
     let response = client
         .request(
             Request::builder()
@@ -62,6 +58,50 @@ pub async fn send_create_indexer_request(
         )
         .await
         .unwrap();
+
+    response
+}
+
+/// Sends a request to create a webhook indexer with the specified script path.
+/// Arguments
+/// - client: The hyper client to use to send the request
+/// - script_path: The path to the script to use for the indexer
+/// - addr: The address of the server to send the request to
+pub async fn send_create_webhook_indexer_request(
+    client: Client<HttpConnector>,
+    script_path: &str,
+    addr: SocketAddr,
+) -> Response<Body> {
+    let mut mpart = MultipartRequest::default();
+
+    mpart.add_file("script.js", script_path);
+    mpart.add_field("target_url", WEHBHOOK_URL);
+    mpart.add_field("indexer_type", "Webhook");
+
+    let response = send_create_indexer_request(client, mpart, addr).await;
+
+    // assert the response of the request
+    assert_eq!(response.status(), StatusCode::OK);
+    response
+}
+
+/// Sends a request to create a postgres indexer with the specified script path.
+/// Arguments
+/// - client: The hyper client to use to send the request
+/// - script_path: The path to the script to use for the indexer
+/// - addr: The address of the server to send the request to
+pub async fn send_create_postgres_indexer_request(
+    client: Client<HttpConnector>,
+    script_path: &str,
+    addr: SocketAddr,
+) -> Response<Body> {
+    let mut mpart = MultipartRequest::default();
+
+    mpart.add_file("script.js", script_path);
+    mpart.add_field("table_name", TABLE_NAME);
+    mpart.add_field("indexer_type", "Postgres");
+
+    let response = send_create_indexer_request(client, mpart, addr).await;
 
     // assert the response of the request
     assert_eq!(response.status(), StatusCode::OK);

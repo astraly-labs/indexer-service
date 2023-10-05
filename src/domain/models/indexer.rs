@@ -88,7 +88,7 @@ impl IntoResponse for IndexerError {
             Self::InfraError(db_error) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error: {}", db_error))
             }
-            _ => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".into()),
+            _ => (StatusCode::INTERNAL_SERVER_ERROR, format!("Internal server error: {}", self)),
         };
         (status, Json(json!({"resource":"IndexerModel", "message": err_msg, "happened_at" : chrono::Utc::now() })))
             .into_response()
