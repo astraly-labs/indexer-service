@@ -223,7 +223,7 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     // stop the indexer
     send_stop_indexer_request(client.clone(), body.id, addr).await;
 
-    // check indexer is present in DB in created state
+    // check indexer is present in DB in failed stopping state
     let indexer = get_indexer(body.id).await;
     assert_eq!(indexer.id, body.id);
     assert_eq!(indexer.status, IndexerStatus::FailedStopping);
