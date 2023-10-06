@@ -18,7 +18,7 @@ pub async fn publish_start_indexer(indexer_id: Uuid, attempt: u32) -> Result<(),
             .as_str(),
     )
     .await
-    .map_err(|e| IndexerError::FailedToPushToQueue(e))?;
+    .map_err(IndexerError::FailedToPushToQueue)?;
     tracing::info!("Sent message to start indexer with id: {}, attempt: {}", indexer_id.to_string(), attempt);
     Ok(())
 }

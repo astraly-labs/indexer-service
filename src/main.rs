@@ -37,9 +37,9 @@ mod routes;
 /// Tests
 #[cfg(test)]
 mod tests;
+pub mod types;
 /// Utilities
 pub mod utils;
-pub mod types;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 

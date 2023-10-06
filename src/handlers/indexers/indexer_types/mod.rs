@@ -5,7 +5,6 @@ use std::process::Stdio;
 
 use axum::async_trait;
 use chrono::Utc;
-use diesel::expression::array_comparison::In;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use uuid::Uuid;
@@ -96,15 +95,13 @@ pub trait Indexer {
                                     // a successful run and a we want MAX_INDEXER_START_RETRIES to restart the indexer
                                     tracing::error!("Indexer {} ran for more than 30 seconds, trying restart", indexer_id);
                                     publish_start_indexer(indexer_id, 1).await.unwrap();
+                                } else if attempt >= MAX_INDEXER_START_RETRIES {
+                                    publish_failed_indexer(indexer_id).await.unwrap();
                                 } else {
-                                    if attempt >= MAX_INDEXER_START_RETRIES {
-                                        publish_failed_indexer(indexer_id).await.unwrap();
-                                    } else {
-                                        // if the indexer ran for more less than 5 minutes, we will try to restart it
-                                        // by incrementing the attempt id. we increment the attempt id as this was
-                                        // a unsuccessful run and a we don't want to exceed MAX_INDEXER_START_RETRIES
-                                        publish_start_indexer(indexer_id, attempt+1).await.unwrap();
-                                    }
+                                    // if the indexer ran for more less than 5 minutes, we will try to restart it
+                                    // by incrementing the attempt id. we increment the attempt id as this was
+                                    // a unsuccessful run and a we don't want to exceed MAX_INDEXER_START_RETRIES
+                                    publish_start_indexer(indexer_id, attempt+1).await.unwrap();
                                 }
 
                             }
@@ -211,7 +208,7 @@ mod tests {
 
         while attempt <= MAX_INDEXER_START_RETRIES {
             // try to start the indexer, it will fail as there is no script loaded
-            handler.start(&indexer, attempt).await;
+            assert!(handler.start(&indexer, attempt).await.is_ok());
 
             // sleep for 1 seconds to let the indexer fail
             tokio::time::sleep(Duration::from_secs(1)).await;
