@@ -6,15 +6,16 @@ use crate::consumers::{get_credentials, Consumers};
 use crate::domain::models::indexer::IndexerError;
 use crate::handlers::indexers::fail_indexer::fail_indexer;
 use crate::handlers::indexers::start_indexer::start_indexer;
+use crate::types::sqs::StartIndexerRequest;
 
 async fn consume_start_indexer() -> Result<(), IndexerError> {
     let (credentials_provider, region) = get_credentials();
     let listener = SQSListener::new(START_INDEXER_QUEUE.into(), |message| {
         tracing::info!("Received message to start indexer: {:?}", message.body());
         let m = message.clone();
-        tokio::spawn(async move {
-            start_indexer(m.body().unwrap().try_into().expect("Invalid message body to start indexer")).await
-        });
+        let request: StartIndexerRequest =
+            serde_json::from_str(m.body().unwrap()).expect("Invalid message body to start indexer");
+        tokio::spawn(async move { start_indexer(request.id, request.attempt_no).await });
     });
 
     let client = SQSListenerClientBuilder::new_with(region, credentials_provider)
