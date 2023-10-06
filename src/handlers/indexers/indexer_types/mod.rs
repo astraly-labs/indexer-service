@@ -93,7 +93,7 @@ pub trait Indexer {
                                     // if the indexer ran for more than 5 minutes, we will try to restart it
                                     // with attempt id 1. we don't want to increment the attempt id as this was
                                     // a successful run and a we want MAX_INDEXER_START_RETRIES to restart the indexer
-                                    tracing::error!("Indexer {} ran for more than 30 seconds, trying restart", indexer_id);
+                                    tracing::error!("Indexer {} ran for more than 5 minutes, trying restart", indexer_id);
                                     publish_start_indexer(indexer_id, 1).await.unwrap();
                                 } else if attempt >= MAX_INDEXER_START_RETRIES {
                                     publish_failed_indexer(indexer_id).await.unwrap();
