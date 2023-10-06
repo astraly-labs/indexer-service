@@ -9,7 +9,7 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use uuid::Uuid;
 
-use crate::constants::indexers::MAX_INDEXER_START_RETRIES;
+use crate::constants::indexers::{MAX_INDEXER_START_RETRIES, WORKING_INDEXER_THRESHOLD_TIME_MINUTES};
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
@@ -89,8 +89,8 @@ pub trait Indexer {
                                 let indexer_id = Uuid::parse_str(indexer_id.as_str()).expect("Invalid UUID for indexer");
                                 let indexer_end_time = Utc::now().time();
                                 let indexer_duration = indexer_end_time - indexer_start_time;
-                                if indexer_duration.num_minutes() > 5 {
-                                    // if the indexer ran for more than 5 minutes, we will try to restart it
+                                if indexer_duration.num_minutes() > WORKING_INDEXER_THRESHOLD_TIME_MINUTES {
+                                    // if the indexer ran for more than threshold time, we will try to restart it
                                     // with attempt id 1. we don't want to increment the attempt id as this was
                                     // a successful run and a we want MAX_INDEXER_START_RETRIES to restart the indexer
                                     tracing::error!("Indexer {} ran for more than 5 minutes, trying restart", indexer_id);
@@ -98,7 +98,7 @@ pub trait Indexer {
                                 } else if attempt >= MAX_INDEXER_START_RETRIES {
                                     publish_failed_indexer(indexer_id).await.unwrap();
                                 } else {
-                                    // if the indexer ran for more less than 5 minutes, we will try to restart it
+                                    // if the indexer ran for less than threshold time, we will try to restart it
                                     // by incrementing the attempt id. we increment the attempt id as this was
                                     // a unsuccessful run and a we don't want to exceed MAX_INDEXER_START_RETRIES
                                     publish_start_indexer(indexer_id, attempt+1).await.unwrap();
