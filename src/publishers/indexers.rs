@@ -12,9 +12,7 @@ pub async fn publish_start_indexer(indexer_id: Uuid, attempt: u32) -> Result<(),
     send_sqs_message(
         START_INDEXER_QUEUE,
         serde_json::to_string(&request)
-            .map_err(|e| {
-                IndexerError::FailedToSerialize(format!("StartIndexerRequest: {:?}, error: {}", request, e.to_string()))
-            })?
+            .map_err(|e| IndexerError::FailedToSerialize(format!("StartIndexerRequest: {:?}, error: {}", request, e)))?
             .as_str(),
     )
     .await
