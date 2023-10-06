@@ -122,7 +122,7 @@ pub async fn create_indexer(
         })
         .await?;
 
-    publish_start_indexer(id).await.map_err(IndexerError::FailedToPushToQueue)?;
+    publish_start_indexer(id, 1).await?;
 
     Ok(Json(created_indexer))
 }

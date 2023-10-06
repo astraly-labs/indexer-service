@@ -75,6 +75,8 @@ pub enum IndexerError {
     FailedToQueryDb(diesel::result::Error),
     #[error("invalid indexer type {0}")]
     InvalidIndexerType(String),
+    #[error("failed to serialize {0}")]
+    FailedToSerialize(String),
 }
 
 impl From<diesel::result::Error> for IndexerError {
