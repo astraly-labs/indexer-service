@@ -148,12 +148,12 @@ pub async fn send_stop_indexer_request(client: Client<HttpConnector>, id: Uuid, 
 
 /// Asserts that a queue contains a message which has a body equal to the
 /// id of the specified indexer
-pub async fn assert_queue_contains_message_with_indexer_id(queue_url: &str, indexer_id: Uuid) {
+pub async fn assert_queue_contains_message_with_indexer_id(queue_url: &str, body: String) {
     let config = config().await;
     let message = config.sqs_client().receive_message().queue_url(queue_url).send().await.unwrap();
     assert_eq!(message.messages.clone().unwrap().len(), 1);
     let message = message.messages().unwrap().get(0).unwrap();
-    assert_eq!(message.body().unwrap(), indexer_id.to_string());
+    assert_eq!(message.body().unwrap(), body);
 }
 
 /// Assert that a s3 buckets contains a specified key

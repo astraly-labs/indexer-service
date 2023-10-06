@@ -16,6 +16,7 @@ use crate::tests::common::utils::{
     send_create_postgres_indexer_request,
 };
 use crate::tests::server::common::setup_server;
+use crate::types::sqs::StartIndexerRequest;
 
 #[rstest]
 #[tokio::test]
@@ -43,7 +44,8 @@ async fn create_postgres_indexer(#[future] setup_server: SocketAddr) {
     assert_s3_contains_key(INDEXER_SERVICE_BUCKET, get_s3_script_key(body.id).as_str()).await;
 
     // check if the message is present on the queue
-    assert_queue_contains_message_with_indexer_id(START_INDEXER_QUEUE, body.id).await;
+    let request = StartIndexerRequest { id: body.id, attempt_no: 1 };
+    assert_queue_contains_message_with_indexer_id(START_INDEXER_QUEUE, serde_json::to_string(&request).unwrap()).await;
 
     // check indexer is present in DB in created state
     let indexer = get_indexer(body.id).await;

@@ -39,6 +39,7 @@ mod routes;
 mod tests;
 /// Utilities
 pub mod utils;
+pub mod types;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 

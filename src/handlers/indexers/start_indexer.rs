@@ -16,7 +16,7 @@ use crate::publishers::indexers::publish_start_indexer;
 use crate::utils::PathExtractor;
 use crate::AppState;
 
-pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
+pub async fn start_indexer(id: Uuid, attempt: u32) -> Result<(), IndexerError> {
     let config = config().await;
     let mut repository = IndexerRepository::new(config.pool());
     let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;
@@ -52,7 +52,7 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
     let mut file = fs::File::create(get_script_tmp_directory(id)).map_err(IndexerError::FailedToCreateFile)?;
     file.write_all(aggregated_bytes.into_bytes().to_vec().as_slice()).map_err(IndexerError::FailedToCreateFile)?;
 
-    let process_id = indexer.start(&indexer_model).await?.into();
+    let process_id = indexer.start(&indexer_model, attempt).await?.into();
 
     repository
         .update_status_and_process_id(UpdateIndexerStatusAndProcessIdDb {
@@ -70,7 +70,7 @@ pub async fn start_indexer_api(
     State(_state): State<AppState>,
     PathExtractor(id): PathExtractor<Uuid>,
 ) -> Result<(), IndexerError> {
-    start_indexer(id).await
+    start_indexer(id, 1).await
 }
 
 pub async fn start_all_indexers() -> Result<(), IndexerError> {
@@ -86,7 +86,7 @@ pub async fn start_all_indexers() -> Result<(), IndexerError> {
         // it would be too many db queries at startup, hence we do that inside the start_indexer function
         // which runs by consuming from the SQS queue
         // TODO: Optimize this in the future (async tokio tasks?)
-        publish_start_indexer(indexer.id).await.map_err(IndexerError::FailedToPushToQueue)?;
+        publish_start_indexer(indexer.id, 1).await?;
     }
 
     Ok(())

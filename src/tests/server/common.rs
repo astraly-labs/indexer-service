@@ -10,7 +10,7 @@ use rstest::{fixture, rstest};
 use tokio::process::Command;
 
 use crate::config::{config, config_force_init};
-use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE};
+use crate::constants::sqs::START_INDEXER_QUEUE;
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus};
 use crate::domain::models::types::AxumErrorResponse;
 use crate::handlers::indexers::fail_indexer::fail_indexer;
@@ -20,6 +20,7 @@ use crate::tests::common::utils::{
     assert_queue_contains_message_with_indexer_id, get_indexer, is_process_running, send_create_indexer_request,
     send_create_webhook_indexer_request, send_start_indexer_request, send_stop_indexer_request,
 };
+use crate::types::sqs::StartIndexerRequest;
 use crate::AppState;
 
 #[fixture]
@@ -132,13 +133,17 @@ async fn failed_running_indexer(#[future] setup_server: SocketAddr) {
     let config = config().await;
 
     // clear the sqs queue
-    config.sqs_client().purge_queue().queue_url(FAILED_INDEXER_QUEUE).send().await.unwrap();
+    config.sqs_client().purge_queue().queue_url(START_INDEXER_QUEUE).send().await.unwrap();
 
     // Create indexer
     let response = send_create_webhook_indexer_request(client.clone(), BROKEN_APIBARA_SCRIPT, addr).await;
 
     let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
     let body: IndexerModel = serde_json::from_slice(&body).unwrap();
+
+    // check if the message is present on the queue
+    let mut request = StartIndexerRequest { id: body.id, attempt_no: 1 };
+    assert_queue_contains_message_with_indexer_id(START_INDEXER_QUEUE, serde_json::to_string(&request).unwrap()).await;
 
     // start the indexer
     send_start_indexer_request(client.clone(), body.id, addr).await;
@@ -147,7 +152,8 @@ async fn failed_running_indexer(#[future] setup_server: SocketAddr) {
     tokio::time::sleep(Duration::from_secs(2)).await;
 
     // check if the message is present on the queue
-    assert_queue_contains_message_with_indexer_id(FAILED_INDEXER_QUEUE, body.id).await;
+    request.attempt_no = 2;
+    assert_queue_contains_message_with_indexer_id(START_INDEXER_QUEUE, serde_json::to_string(&request).unwrap()).await;
 
     // fail the indexer
     assert!(fail_indexer(body.id).await.is_ok());

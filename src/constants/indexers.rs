@@ -1,0 +1,1 @@
+pub const MAX_INDEXER_START_RETRIES: u32 = 3;
