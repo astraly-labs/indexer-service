@@ -15,7 +15,7 @@ const filter = {
 };
 
 function escapeInvalidCharacters(str) {
-  return str.replace(/^[\x00-\x1F]+/, '');
+  return str.replace(/^[\x00-\x1F]+/, "");
 }
 
 function decodeEventsInBlock({ header, events }) {
@@ -35,9 +35,15 @@ function decodeEventsInBlock({ header, events }) {
     ] = event.data;
 
     // Convert felts to string
-    const publisherName = escapeInvalidCharacters(shortString.decodeShortString(publisher));
-    const sourceName = escapeInvalidCharacters(shortString.decodeShortString(source));
-    const pairIdName = escapeInvalidCharacters(shortString.decodeShortString(pairId));
+    const publisherName = escapeInvalidCharacters(
+      shortString.decodeShortString(publisher)
+    );
+    const sourceName = escapeInvalidCharacters(
+      shortString.decodeShortString(source)
+    );
+    const pairIdName = escapeInvalidCharacters(
+      shortString.decodeShortString(pairId)
+    );
 
     // Convert to snake_case because it works better with postgres.
     return {
@@ -49,7 +55,7 @@ function decodeEventsInBlock({ header, events }) {
       block_timestamp: timestamp,
       transaction_hash: transactionHash,
       price: +price,
-      timestamp: new Date(Number(entryTimestamp)*1000).toISOString(),
+      timestamp: new Date(Number(entryTimestamp) * 1000).toISOString(),
       publisher: publisherName,
       source: sourceName,
       volume: +volume,
