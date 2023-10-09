@@ -39,22 +39,6 @@ function decodeEventsInBlock({ header, events }) {
     const sourceName = escapeInvalidCharacters(shortString.decodeShortString(source));
     const pairIdName = escapeInvalidCharacters(shortString.decodeShortString(pairId));
 
-    console.log("future entry - ",{
-      network: "starknet-goerli",
-      pair_id: pairIdName,
-      data_id: dataId,
-      block_hash: blockHash,
-      block_number: +blockNumber,
-      block_timestamp: timestamp,
-      transaction_hash: transactionHash,
-      price: +price,
-      timestamp: new Date(Number(entryTimestamp)*1000).toISOString(),
-      publisher: publisherName,
-      source: sourceName,
-      volume: +volume,
-      expiration_timestamp: new Date(Number(expirationTimestamp)).toISOString(),
-    });
-
     // Convert to snake_case because it works better with postgres.
     return {
       network: "starknet-goerli",
