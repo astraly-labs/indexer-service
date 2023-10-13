@@ -214,6 +214,9 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     // start the indexer
     send_start_indexer_request(client.clone(), body.id, addr).await;
 
+    // sleep for 5 seconds to let the indexer start
+    tokio::time::sleep(Duration::from_secs(5)).await;
+
     // kill indexer so stop fails
     let indexer = get_indexer(body.id).await;
     assert!(
@@ -231,6 +234,9 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
             .unwrap()
             .success()
     );
+
+    // sleep for 2 seconds to let the message go to queue
+    tokio::time::sleep(Duration::from_secs(2)).await;
 
     // stop the indexer
     send_stop_indexer_request(client.clone(), body.id, addr).await;
