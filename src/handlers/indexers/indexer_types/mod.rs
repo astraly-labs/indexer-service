@@ -5,15 +5,17 @@ use std::process::Stdio;
 
 use axum::async_trait;
 use chrono::Utc;
+use futures_util::task::SpawnExt;
+use shutil::pipe;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use uuid::Uuid;
 
 use crate::constants::indexers::{MAX_INDEXER_START_RETRIES, WORKING_INDEXER_THRESHOLD_TIME_MINUTES};
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
-use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
+use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
-use crate::publishers::indexers::{publish_failed_indexer, publish_start_indexer};
+use crate::publishers::indexers::{publish_failed_indexer, publish_start_indexer, publish_stop_indexer};
 use crate::utils::env::get_environment_variable;
 
 #[async_trait]
@@ -80,13 +82,14 @@ pub trait Indexer {
                         }
                     }
                     result = child_handle.wait() => {
+                        let indexer_id = Uuid::parse_str(indexer_id.as_str()).expect("Invalid UUID for indexer");
                         match result.unwrap().success() {
                             true => {
                                 tracing::info!("Child process exited successfully {}", indexer_id);
+                                publish_stop_indexer(indexer_id, IndexerStatus::Stopped).await.unwrap();
                             },
                             false => {
                                 tracing::error!("Child process exited with an error {}", indexer_id);
-                                let indexer_id = Uuid::parse_str(indexer_id.as_str()).expect("Invalid UUID for indexer");
                                 let indexer_end_time = Utc::now().time();
                                 let indexer_duration = indexer_end_time - indexer_start_time;
                                 if indexer_duration.num_minutes() > WORKING_INDEXER_THRESHOLD_TIME_MINUTES {
@@ -123,6 +126,14 @@ pub trait Indexer {
                 return Err(IndexerError::InternalServerError("Cannot stop indexer without process id".to_string()));
             }
         };
+
+        if !self.is_running(indexer.clone()).await? {
+            return Err(IndexerError::InternalServerError(format!(
+                "Cannot stop indexer that's not running, indexer id {}",
+                indexer.id
+            )));
+        }
+
         let is_success = Command::new("kill")
             // Silence  stdout and stderr
             .stdout(Stdio::null())
@@ -155,26 +166,8 @@ pub trait Indexer {
         // Check if the process is running and not in the defunct state
         // `Z` state implies the zombie state where the process is technically
         // dead but still in the process table
-        Ok(Command::new("ps")
-            // Silence  stdout and stderr
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .args([
-                "-o",
-                "stat=",
-                "-p",
-                process_id.to_string().as_str(),
-                "|",
-                "grep",
-                "-vq", // `v` implies invert match, `q` implies quiet
-                "Z" // `Z` implies zombie state
-            ])
-            .spawn()
-            .expect("Could not check the indexer status")
-            .wait()
-            .await
-            .unwrap()
-            .success())
+        Ok(pipe(vec![vec!["ps", "-o", "stat=", "-p", process_id.to_string().as_str()], vec!["grep", "-vq", "Z"]])
+            .is_ok())
     }
 }
 

@@ -14,7 +14,7 @@ use uuid::Uuid;
 use crate::domain::models::types::AxumErrorResponse;
 use crate::infra::errors::InfraError;
 
-#[derive(Clone, Default, Debug, PartialEq, EnumString, Serialize, Deserialize, Display)]
+#[derive(Clone, Default, Debug, PartialEq, EnumString, Serialize, Deserialize, Display, Copy)]
 pub enum IndexerStatus {
     #[default]
     Created,

@@ -1916,6 +1916,7 @@ dependencies = [
  "rustls-native-certs",
  "serde",
  "serde_json",
+ "shutil",
  "sqs_worker",
  "strum",
  "strum_macros",
@@ -2833,6 +2834,12 @@ checksum = "900fba806f70c630b0a382d0d825e17a0f19fcd059a2ade1ff237bcddf446b31"
 dependencies = [
  "lazy_static",
 ]
+
+[[package]]
+name = "shutil"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "726c1f160d565e9cef6ecaf0305c86fb254a9c6db6cb29379680b0213aa3a7e1"
 
 [[package]]
 name = "signal-hook-registry"
