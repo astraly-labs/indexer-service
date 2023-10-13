@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
 use crate::domain::models::indexer::IndexerStatus;
 
 #[derive(Serialize, Deserialize, Debug)]

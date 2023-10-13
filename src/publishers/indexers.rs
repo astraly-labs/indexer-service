@@ -28,7 +28,7 @@ pub async fn publish_failed_indexer(indexer_id: Uuid) -> Result<(), Error> {
 
 pub async fn publish_stop_indexer(indexer_id: Uuid, status: IndexerStatus) -> Result<(), IndexerError> {
     tracing::info!("Sending message to stop indexer with status: {}, attempt: {}", indexer_id.to_string(), status);
-    let request = StopIndexerRequest { id: indexer_id, status: status.clone() };
+    let request = StopIndexerRequest { id: indexer_id, status };
     send_sqs_message(STOP_INDEXER_QUEUE, serialize_request(request)?.as_str())
         .await
         .map_err(IndexerError::FailedToPushToQueue)?;
@@ -36,10 +36,11 @@ pub async fn publish_stop_indexer(indexer_id: Uuid, status: IndexerStatus) -> Re
     Ok(())
 }
 
+#[allow(clippy::result_large_err)]
 fn serialize_request<T>(request: T) -> Result<String, IndexerError>
 where
     T: Serialize + Debug,
 {
-    Ok(serde_json::to_string(&request)
-        .map_err(|e| IndexerError::FailedToSerialize(format!("StopIndexerRequest: {:?}, error: {}", request, e)))?)
+    serde_json::to_string(&request)
+        .map_err(|e| IndexerError::FailedToSerialize(format!("StopIndexerRequest: {:?}, error: {}", request, e)))
 }

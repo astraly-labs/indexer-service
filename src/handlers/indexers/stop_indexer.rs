@@ -42,14 +42,14 @@ pub async fn update_indexer_state(id: Uuid, new_status: IndexerStatus) -> Result
     let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;
 
     let check_redundant_update_call = |current_status: &IndexerStatus, new_status: IndexerStatus, id: Uuid| {
-        if current_status.clone() == new_status {
+        if *current_status == new_status {
             // redundant call
             return Ok(());
         }
-        return Err(IndexerError::InternalServerError(format!(
+        Err(IndexerError::InternalServerError(format!(
             "Cannot move from {} to {} for indexer {}",
             current_status, new_status, id
-        )));
+        )))
     };
     match indexer_model.status {
         IndexerStatus::Running => (),

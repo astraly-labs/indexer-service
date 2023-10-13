@@ -5,7 +5,6 @@ use std::process::Stdio;
 
 use axum::async_trait;
 use chrono::Utc;
-use futures_util::task::SpawnExt;
 use shutil::pipe;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
