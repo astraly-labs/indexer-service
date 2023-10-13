@@ -146,16 +146,28 @@ pub trait Indexer {
         let process_id = match indexer.process_id {
             Some(process_id) => process_id,
             None => {
-                return Err(IndexerError::InternalServerError("Cannot stop indexer without process id".to_string()));
+                return Err(IndexerError::InternalServerError(
+                    "Cannot check running status for indexer without process id".to_string(),
+                ));
             }
         };
+
+        // Check if the process is running and not in the defunct state
+        // `Z` state implies the zombie state where the process is technically
+        // dead but still in the process table
         Ok(Command::new("ps")
             // Silence  stdout and stderr
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .args([
+                "-o",
+                "stat=",
                 "-p",
                 process_id.to_string().as_str(),
+                "|",
+                "grep",
+                "-vq", // `v` implies invert match, `q` implies quiet
+                "Z" // `Z` implies zombie state
             ])
             .spawn()
             .expect("Could not check the indexer status")
