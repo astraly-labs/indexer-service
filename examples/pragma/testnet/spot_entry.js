@@ -18,7 +18,7 @@ function escapeInvalidCharacters(str) {
   return str.replace(/^[\x00-\x1F]+/, "");
 }
 
-function decodeTransfersInBlock({ header, events }) {
+function decodeEventsInBlock({ header, events }) {
   const { blockNumber, blockHash, timestamp } = header;
   return events.map(({ event, receipt }) => {
     const { transactionHash } = receipt;
