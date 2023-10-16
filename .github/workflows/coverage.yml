@@ -5,36 +5,40 @@ on:
   workflow_dispatch:
   workflow_call:
 
-env:
-  HOST: 0.0.0.0
-  PORT: 8080
-  DATABASE_URL: postgres://postgres:postgres@localhost:5432
-  AWS_REGION: eu-west-3
-  LOCALSTACK_ENDPOINT: https://3d6f-2401-4900-1c69-6263-41b5-4a50-5745-c494.ngrok-free.app
-  BINARY_BASE_PATH: /bin
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  APIBARA_AUTH_TOKEN: ${{ secrets.APIBARA_AUTH_TOKEN }}
-  RUST_BACKTRACE: 1
-
 jobs:
   coverage:
     # sadly, for now we have to "rebuild" for the coverage
-    runs-on: macos-latest
+    runs-on: aws-ec2
+
+    env:
+      HOST: 0.0.0.0
+      PORT: 8080
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432
+      AWS_REGION: eu-west-3
+      LOCALSTACK_ENDPOINT: http://localhost:4566
+      BINARY_BASE_PATH: /bin
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      APIBARA_AUTH_TOKEN: ${{ secrets.APIBARA_AUTH_TOKEN }}
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: postgres
+          POSTGRES_USER: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
-      - uses: docker-practice/actions-setup-docker@1.0.11
-
-      - name: Start LocalStack
-        run: |
-          pip install localstack awscli-local[ver1] # install LocalStack cli and awslocal
-          docker pull localstack/localstack         # Make sure to pull the latest version of the image
-          localstack start -d                       # Start LocalStack in the background
-          
-          echo "Waiting for LocalStack startup..."  # Wait 30 seconds for the LocalStack container
-          localstack wait -t 30                     # to become ready before timing out 
-          echo "Startup complete"
 
       # selecting a toolchain either by action or manual `rustup` calls should happen
       # before the plugin, as the cache uses the current rustc version as its cache key
@@ -55,8 +59,15 @@ jobs:
           gunzip sink-postgres-x86_64-linux.gz
           sudo cp sink-postgres-x86_64-linux /bin/sink-postgres
 
-      - name: Install awslocal
-        run: pip install awscli-local
+      - name: Start LocalStack
+        run: |
+          pip install localstack awscli-local
+          docker pull localstack/localstack         
+          localstack start -d                       
+
+          echo "Waiting for LocalStack startup..."  
+          localstack wait -t 30                     
+          echo "Startup complete"
 
       - name: Create S3 Bucket and SQS Queues
         run: |
@@ -67,7 +78,6 @@ jobs:
           awslocal sqs create-queue --queue-name indexer-service-failed-indexer
           awslocal sqs create-queue --queue-name indexer-service-stop-indexer
           awslocal sqs list-queues
-          awslocal sqs purge-queue --queue-url indexer-service-start-indexer
 
       - name: Clean workspace
         run: |
