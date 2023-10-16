@@ -10,7 +10,7 @@ env:
   PORT: 8080
   DATABASE_URL: postgres://postgres:postgres@localhost:5432
   AWS_REGION: eu-west-3
-  LOCALSTACK_ENDPOINT: http://localhost:4566
+  LOCALSTACK_ENDPOINT: https://3d6f-2401-4900-1c69-6263-41b5-4a50-5745-c494.ngrok-free.app
   BINARY_BASE_PATH: /bin
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
