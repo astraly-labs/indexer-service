@@ -39,9 +39,9 @@ jobs:
       localstack:
         image: localstack/localstack:latest
         ports:
-          - "4566:4566"
-          - "4571:4571"
-          - "8080:8080"
+          - 4566:4566
+          - 4571:4571
+          - 8080:8080
         options: >-
           --health-cmd "curl -k https://localhost:4566"
           --health-interval 10s
@@ -72,7 +72,6 @@ jobs:
 
       - name: Install awslocal
         run: pip install awscli-local
-
 
       - name: Create S3 Bucket and SQS Queues
         run: |
