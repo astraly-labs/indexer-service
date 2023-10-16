@@ -20,7 +20,7 @@ env:
 jobs:
   coverage:
     # sadly, for now we have to "rebuild" for the coverage
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
 
     services:
       postgres:
