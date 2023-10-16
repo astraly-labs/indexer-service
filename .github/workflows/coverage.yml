@@ -68,9 +68,6 @@ jobs:
       - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
 
-      - name: Print env variables
-        run: echo ${LOCALSTACK_ENDPOINT}
-
       - name: Download sink binaries
         run: |
           wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.1/sink-webhook-x86_64-linux.gz
