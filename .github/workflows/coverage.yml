@@ -53,10 +53,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-      - run: |
-          brew install docker
-          colima start
+      - uses: docker-practice/actions-setup-docker@1.0.11
 
       # selecting a toolchain either by action or manual `rustup` calls should happen
       # before the plugin, as the cache uses the current rustc version as its cache key
