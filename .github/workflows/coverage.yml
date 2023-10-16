@@ -73,6 +73,9 @@ jobs:
       - name: Install awslocal
         run: pip install awscli-local
 
+      - name: Check process on port 4566
+        run: lsof -i :4566
+
       - name: Create S3 Bucket and SQS Queues
         run: |
           awslocal s3api create-bucket --bucket indexer-service --region eu-west-3 --create-bucket-configuration LocationConstraint=eu-west-3
