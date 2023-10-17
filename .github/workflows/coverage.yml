@@ -8,7 +8,7 @@ on:
 jobs:
   coverage:
     # sadly, for now we have to "rebuild" for the coverage
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     env:
       HOST: 0.0.0.0
@@ -20,6 +20,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       APIBARA_AUTH_TOKEN: ${{ secrets.APIBARA_AUTH_TOKEN }}
+      APIBARA_ETCD_URL: http://localhost:2379
 
     services:
       postgres:
@@ -37,14 +38,32 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4566:4566
+          - 4571:4571
+          - 8080:8080
+        options: >-
+          --health-cmd "curl -k https://localhost:4566"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      etcd:
+        image: bitnami/etcd:3.5.0
+        ports:
+          - 2379:2379
+          - 2380:2380
+        env:
+          ALLOW_NONE_AUTHENTICATION: yes
+
     steps:
       - uses: actions/checkout@v3
 
       # selecting a toolchain either by action or manual `rustup` calls should happen
       # before the plugin, as the cache uses the current rustc version as its cache key
       - run: rustup show
-
-      - uses: Swatinem/rust-cache@v2
 
       - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
@@ -54,20 +73,16 @@ jobs:
           wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.0/sink-webhook-x86_64-linux.gz
           gunzip sink-webhook-x86_64-linux.gz
           sudo cp sink-webhook-x86_64-linux /bin/sink-webhook
+          sudo chmod 777 /bin/sink-webhook
 
           wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.0/sink-postgres-x86_64-linux.gz
           gunzip sink-postgres-x86_64-linux.gz
           sudo cp sink-postgres-x86_64-linux /bin/sink-postgres
+          sudo chmod 777 /bin/sink-postgres
 
       - name: Start LocalStack
         run: |
-          pip install localstack awscli-local
-          docker pull localstack/localstack         
-          localstack start -d                       
-
-          echo "Waiting for LocalStack startup..."  
-          localstack wait -t 30                     
-          echo "Startup complete"
+          pip install awscli-local
 
       - name: Create S3 Bucket and SQS Queues
         run: |
