@@ -36,13 +36,13 @@ function decodeEventsInBlock({ header, events }) {
 
     // Convert felts to string
     const publisherName = escapeInvalidCharacters(
-      shortString.decodeShortString(publisher)
+      shortString.decodeShortString(publisher),
     );
     const sourceName = escapeInvalidCharacters(
-      shortString.decodeShortString(source)
+      shortString.decodeShortString(source),
     );
     const pairIdName = escapeInvalidCharacters(
-      shortString.decodeShortString(pairId)
+      shortString.decodeShortString(pairId),
     );
 
     // Convert to snake_case because it works better with postgres.
