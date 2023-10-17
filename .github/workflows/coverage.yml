@@ -37,6 +37,18 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      localstack:
+        image: localstack/localstack:latest
+        ports:
+          - 4566:4566
+          - 4571:4571
+          - 8080:8080
+        options: >-
+          --health-cmd "curl -k https://localhost:4566"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v3
 
@@ -61,13 +73,7 @@ jobs:
 
       - name: Start LocalStack
         run: |
-          pip install localstack awscli-local
-          docker pull localstack/localstack         
-          localstack start -d                       
-
-          echo "Waiting for LocalStack startup..."  
-          localstack wait -t 30                     
-          echo "Startup complete"
+          pip install awscli-local
 
       - name: Create S3 Bucket and SQS Queues
         run: |
