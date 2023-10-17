@@ -14,7 +14,11 @@ const filter = {
   ],
 };
 
-function decodeTransfersInBlock({ header, events }) {
+function escapeInvalidCharacters(str) {
+  return str.replace(/^[\x00-\x1F]+/, "");
+}
+
+function decodeEventsInBlock({ header, events }) {
   const { blockNumber, blockHash, timestamp } = header;
   return events.map(({ event, receipt }) => {
     const { transactionHash } = receipt;
@@ -24,9 +28,15 @@ function decodeTransfersInBlock({ header, events }) {
       event.data;
 
     // Convert felts to string
-    const publisherName = shortString.decodeShortString(publisher);
-    const sourceName = shortString.decodeShortString(source);
-    const pairIdName = shortString.decodeShortString(pairId);
+    const publisherName = escapeInvalidCharacters(
+      shortString.decodeShortString(publisher),
+    );
+    const sourceName = escapeInvalidCharacters(
+      shortString.decodeShortString(source),
+    );
+    const pairIdName = escapeInvalidCharacters(
+      shortString.decodeShortString(pairId),
+    );
 
     // Convert to snake_case because it works better with postgres.
     return {
@@ -38,7 +48,7 @@ function decodeTransfersInBlock({ header, events }) {
       block_timestamp: timestamp,
       transaction_hash: transactionHash,
       price: +price,
-      timestamp: entryTimestamp,
+      timestamp: new Date(Number(entryTimestamp) * 1000).toISOString(),
       publisher: publisherName,
       source: sourceName,
       volume: +volume,
@@ -48,7 +58,7 @@ function decodeTransfersInBlock({ header, events }) {
 
 // Configure indexer for streaming Starknet Goerli data starting at the specified block.
 export const config = {
-  streamUrl: "https://mainnet.starknet.a5a.ch",
+  streamUrl: "https://goerli.starknet.a5a.ch",
   startingBlock: 865000,
   network: "starknet",
   filter,
