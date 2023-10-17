@@ -1,13 +1,11 @@
-use std::fmt::Debug;
-
 use aws_sdk_sqs::Error;
-use serde::Serialize;
 use uuid::Uuid;
 
 use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE, STOP_INDEXER_QUEUE};
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
 use crate::publishers::send_sqs_message;
 use crate::types::sqs::{StartIndexerRequest, StopIndexerRequest};
+use crate::utils::serde::serialize_request;
 
 pub async fn publish_start_indexer(indexer_id: Uuid, attempt: u32) -> Result<(), IndexerError> {
     tracing::info!("Sending message to start indexer with id: {}, attempt: {}", indexer_id.to_string(), attempt);
@@ -34,13 +32,4 @@ pub async fn publish_stop_indexer(indexer_id: Uuid, status: IndexerStatus) -> Re
         .map_err(IndexerError::FailedToPushToQueue)?;
     tracing::info!("Sent message to stop indexer with id: {}, status: {}", indexer_id.to_string(), status);
     Ok(())
-}
-
-#[allow(clippy::result_large_err)]
-fn serialize_request<T>(request: T) -> Result<String, IndexerError>
-where
-    T: Serialize + Debug,
-{
-    serde_json::to_string(&request)
-        .map_err(|e| IndexerError::FailedToSerialize(format!("StopIndexerRequest: {:?}, error: {}", request, e)))
 }
