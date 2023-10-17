@@ -127,6 +127,7 @@ pub trait Indexer {
         };
 
         if !self.is_running(indexer.clone()).await? {
+            println!("the indexer isn't running!");
             return Err(IndexerError::InternalServerError(format!(
                 "Cannot stop indexer that's not running, indexer id {}",
                 indexer.id
@@ -135,8 +136,8 @@ pub trait Indexer {
 
         let is_success = Command::new("kill")
             // Silence  stdout and stderr
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            // .stdout(Stdio::null())
+            // .stderr(Stdio::null())
             .args([
                 process_id.to_string().as_str(),
             ])
