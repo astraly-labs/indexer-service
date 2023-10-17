@@ -65,8 +65,6 @@ jobs:
       # before the plugin, as the cache uses the current rustc version as its cache key
       - run: rustup show
 
-      - uses: Swatinem/rust-cache@v2
-
       - uses: taiki-e/install-action@cargo-llvm-cov
       - uses: taiki-e/install-action@nextest
 
