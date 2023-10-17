@@ -17,7 +17,6 @@ use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
 use tokio::sync::OnceCell;
 
-use crate::constants::sqs::START_INDEXER_QUEUE;
 #[cfg(test)]
 use crate::run_migrations;
 #[cfg(test)]
@@ -151,16 +150,10 @@ pub async fn init_config() -> Config {
 
     let localstack_endpoint = get_environment_variable("LOCALSTACK_ENDPOINT");
 
-    println!("this is the localstack endpoint {}", localstack_endpoint);
-
     // init AWS SQS
     let sqs_config =
         aws_sdk_sqs::config::Builder::from(&shared_config).endpoint_url(localstack_endpoint.clone()).build();
     let sqs_client = SqsClient::from_conf(sqs_config);
-
-    println!("trying to purge queue");
-    sqs_client.purge_queue().queue_url(START_INDEXER_QUEUE).send().await.expect("Failed to purge queue");
-    println!("purge worked");
 
     // init AWS S3 client
     let s3_config = aws_sdk_s3::config::Builder::from(&shared_config)
