@@ -68,14 +68,14 @@ pub trait Indexer {
                 tokio::select! {
                     result = stdout_reader.next_line() => {
                         match result {
-                            Ok(Some(line)) => tracing::info!("[indexer-{}-stdout] {}", indexer_id, line),
+                            Ok(Some(line)) => println!("[indexer-{}-stdout] {}", indexer_id, line),
                             Err(_) => (), // we will break on .wait
                             _ => ()
                         }
                     }
                     result = stderr_reader.next_line() => {
                         match result {
-                            Ok(Some(line)) => tracing::info!("[indexer-{}-stderr] {}", indexer_id, line),
+                            Ok(Some(line)) => println!("[indexer-{}-stderr] {}", indexer_id, line),
                             Err(_) => (), // we will break on .wait
                             _ => ()
                         }
