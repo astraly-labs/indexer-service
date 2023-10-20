@@ -3,3 +3,4 @@ pub use custom_extractors::path_extractor::PathExtractor;
 
 mod custom_extractors;
 pub mod env;
+pub mod serde;
