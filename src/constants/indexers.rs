@@ -1,6 +1,6 @@
 pub const MAX_INDEXER_START_RETRIES: u32 = 3;
 pub const WORKING_INDEXER_THRESHOLD_TIME_MINUTES: i64 = 5;
 #[cfg(not(test))]
-pub const START_INDEXER_DELAY_SECONDS: i32 = 120;
+pub const START_INDEXER_DELAY_SECONDS: u16 = 120;
 #[cfg(test)]
-pub const START_INDEXER_DELAY_SECONDS: i32 = 0;
+pub const START_INDEXER_DELAY_SECONDS: u16 = 0;

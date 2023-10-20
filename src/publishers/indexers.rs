@@ -7,7 +7,7 @@ use crate::publishers::{send_sqs_message, send_sqs_message_with_delay};
 use crate::types::sqs::{StartIndexerRequest, StopIndexerRequest};
 use crate::utils::serde::serialize_request;
 
-pub async fn publish_start_indexer(indexer_id: Uuid, attempt: u32, delay_seconds: i32) -> Result<(), IndexerError> {
+pub async fn publish_start_indexer(indexer_id: Uuid, attempt: u32, delay_seconds: u16) -> Result<(), IndexerError> {
     tracing::info!(
         "Sending message to start indexer with id: {}, attempt: {}, delay_seconds: {}",
         indexer_id.to_string(),
