@@ -132,7 +132,6 @@ pub trait Indexer {
         };
 
         if !self.is_running(indexer.clone()).await? {
-            println!("the indexer isn't running!");
             return Err(IndexerError::InternalServerError(format!(
                 "Cannot stop indexer that's not running, indexer id {}",
                 indexer.id
