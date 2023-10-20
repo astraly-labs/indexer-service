@@ -86,7 +86,7 @@ pub async fn start_all_indexers() -> Result<(), IndexerError> {
         // it would be too many db queries at startup, hence we do that inside the start_indexer function
         // which runs by consuming from the SQS queue
         // TODO: Optimize this in the future (async tokio tasks?)
-        publish_start_indexer(indexer.id, 1).await?;
+        publish_start_indexer(indexer.id, 1, 0).await?;
     }
 
     Ok(())
