@@ -122,7 +122,7 @@ pub async fn create_indexer(
         })
         .await?;
 
-    publish_start_indexer(id, 1).await?;
+    publish_start_indexer(id, 1, 0).await?;
 
     Ok(Json(created_indexer))
 }

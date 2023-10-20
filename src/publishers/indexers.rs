@@ -3,17 +3,27 @@ use uuid::Uuid;
 
 use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE, STOP_INDEXER_QUEUE};
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
-use crate::publishers::send_sqs_message;
+use crate::publishers::{send_sqs_message, send_sqs_message_with_delay};
 use crate::types::sqs::{StartIndexerRequest, StopIndexerRequest};
 use crate::utils::serde::serialize_request;
 
-pub async fn publish_start_indexer(indexer_id: Uuid, attempt: u32) -> Result<(), IndexerError> {
-    tracing::info!("Sending message to start indexer with id: {}, attempt: {}", indexer_id.to_string(), attempt);
+pub async fn publish_start_indexer(indexer_id: Uuid, attempt: u32, delay_seconds: i32) -> Result<(), IndexerError> {
+    tracing::info!(
+        "Sending message to start indexer with id: {}, attempt: {}, delay_seconds: {}",
+        indexer_id.to_string(),
+        attempt,
+        delay_seconds
+    );
     let request = StartIndexerRequest { id: indexer_id, attempt_no: attempt };
-    send_sqs_message(START_INDEXER_QUEUE, serialize_request(request)?.as_str())
+    send_sqs_message_with_delay(START_INDEXER_QUEUE, serialize_request(request)?.as_str(), delay_seconds)
         .await
         .map_err(IndexerError::FailedToPushToQueue)?;
-    tracing::info!("Sent message to start indexer with id: {}, attempt: {}", indexer_id.to_string(), attempt);
+    tracing::info!(
+        "Sent message to start indexer with id: {}, attempt: {}, delay_seconds: {}",
+        indexer_id.to_string(),
+        attempt,
+        delay_seconds
+    );
     Ok(())
 }
 

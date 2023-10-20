@@ -10,7 +10,9 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use uuid::Uuid;
 
-use crate::constants::indexers::{MAX_INDEXER_START_RETRIES, WORKING_INDEXER_THRESHOLD_TIME_MINUTES};
+use crate::constants::indexers::{
+    MAX_INDEXER_START_RETRIES, START_INDEXER_DELAY_SECONDS, WORKING_INDEXER_THRESHOLD_TIME_MINUTES,
+};
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
@@ -68,14 +70,14 @@ pub trait Indexer {
                 tokio::select! {
                     result = stdout_reader.next_line() => {
                         match result {
-                            Ok(Some(line)) => println!("[indexer-{}-stdout] {}", indexer_id, line),
+                            Ok(Some(line)) => tracing::info!("[indexer-{}-stdout] {}", indexer_id, line),
                             Err(_) => (), // we will break on .wait
                             _ => ()
                         }
                     }
                     result = stderr_reader.next_line() => {
                         match result {
-                            Ok(Some(line)) => println!("[indexer-{}-stderr] {}", indexer_id, line),
+                            Ok(Some(line)) => tracing::info!("[indexer-{}-stderr] {}", indexer_id, line),
                             Err(_) => (), // we will break on .wait
                             _ => ()
                         }
@@ -96,14 +98,17 @@ pub trait Indexer {
                                     // with attempt id 1. we don't want to increment the attempt id as this was
                                     // a successful run and a we want MAX_INDEXER_START_RETRIES to restart the indexer
                                     tracing::error!("Indexer {} ran for more than 5 minutes, trying restart", indexer_id);
-                                    publish_start_indexer(indexer_id, 1).await.unwrap();
+                                    publish_start_indexer(indexer_id, 1, 0).await.unwrap();
                                 } else if attempt >= MAX_INDEXER_START_RETRIES {
                                     publish_failed_indexer(indexer_id).await.unwrap();
                                 } else {
                                     // if the indexer ran for less than threshold time, we will try to restart it
                                     // by incrementing the attempt id. we increment the attempt id as this was
                                     // a unsuccessful run and a we don't want to exceed MAX_INDEXER_START_RETRIES
-                                    publish_start_indexer(indexer_id, attempt+1).await.unwrap();
+                                    // we also add a delay before starting the indexer as it's possible there are other
+                                    // instances of the service running which have acquired the lock, they need to shut down
+                                    // before this service can get the lock.
+                                    publish_start_indexer(indexer_id, attempt+1, START_INDEXER_DELAY_SECONDS).await.unwrap();
                                 }
 
                             }
