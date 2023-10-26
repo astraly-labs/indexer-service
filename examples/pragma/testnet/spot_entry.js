@@ -71,4 +71,4 @@ export const config = {
 };
 
 // Transform each block using the function defined in starknet.js.
-export default decodeTransfersInBlock;
+export default decodeEventsInBlock;
