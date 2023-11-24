@@ -45,12 +45,12 @@ cp ./target/release/$APP_NAME /bin/server
 EOF
 
 # Download sink-webhook from the Github release
-RUN wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.3/sink-webhook-x86_64-linux.gz
+RUN wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.6/sink-webhook-x86_64-linux.gz
 RUN gunzip sink-webhook-x86_64-linux.gz
 RUN cp sink-webhook-x86_64-linux /bin/sink-webhook
 
 # Download sink-postgres from the Github release
-RUN wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.3/sink-postgres-x86_64-linux.gz
+RUN wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.7/sink-postgres-x86_64-linux.gz
 RUN gunzip sink-postgres-x86_64-linux.gz
 RUN cp sink-postgres-x86_64-linux /bin/sink-postgres
 
