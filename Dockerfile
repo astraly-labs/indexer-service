@@ -50,7 +50,7 @@ RUN gunzip sink-webhook-x86_64-linux.gz
 RUN cp sink-webhook-x86_64-linux /bin/sink-webhook
 
 # Download sink-postgres from the Github release
-RUN wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.7/sink-postgres-x86_64-linux.gz
+RUN wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.8/sink-postgres-x86_64-linux.gz
 RUN gunzip sink-postgres-x86_64-linux.gz
 RUN cp sink-postgres-x86_64-linux /bin/sink-postgres
 
