@@ -5,7 +5,6 @@ use axum::extract::State;
 use uuid::Uuid;
 
 use crate::config::config;
-use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
 use crate::handlers::indexers::indexer_types::get_indexer_handler;
 use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directory};
@@ -13,6 +12,7 @@ use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, Repository, UpdateIndexerStatusAndProcessIdDb,
 };
 use crate::publishers::indexers::publish_start_indexer;
+use crate::utils::env::get_environment_variable;
 use crate::utils::PathExtractor;
 use crate::AppState;
 
@@ -38,10 +38,12 @@ pub async fn start_indexer(id: Uuid, attempt: u32) -> Result<(), IndexerError> {
         _ => return Err(IndexerError::InvalidIndexerStatus(indexer_model.status)),
     }
 
+    let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
+
     let data = config
         .s3_client()
         .get_object()
-        .bucket(INDEXER_SERVICE_BUCKET)
+        .bucket(bucket_name)
         .key(get_s3_script_key(id))
         .send()
         .await
