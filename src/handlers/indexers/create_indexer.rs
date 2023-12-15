@@ -9,13 +9,13 @@ use diesel_async::{AsyncConnection, RunQueryDsl};
 use uuid::Uuid;
 
 use crate::config::config;
-use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::infra::db::schema::indexers;
 use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
 use crate::publishers::indexers::publish_start_indexer;
+use crate::utils::env::get_environment_variable;
 use crate::AppState;
 
 #[derive(Default)]
@@ -93,6 +93,7 @@ pub async fn create_indexer(
     };
 
     let config = config().await;
+    let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
 
     let connection = &mut state.pool.get().await.expect("Failed to get a connection from the pool");
     let created_indexer = connection
@@ -109,7 +110,7 @@ pub async fn create_indexer(
                 config
                     .s3_client()
                     .put_object()
-                    .bucket(INDEXER_SERVICE_BUCKET)
+                    .bucket(bucket_name)
                     .key(get_s3_script_key(id))
                     .body(create_indexer_request.data.into())
                     .send()

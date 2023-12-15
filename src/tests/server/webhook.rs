@@ -5,7 +5,6 @@ use mpart_async::client::MultipartRequest;
 use rstest::rstest;
 
 use crate::config::config;
-use crate::constants::s3::INDEXER_SERVICE_BUCKET;
 use crate::constants::sqs::START_INDEXER_QUEUE;
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
 use crate::domain::models::types::AxumErrorResponse;
@@ -17,6 +16,7 @@ use crate::tests::common::utils::{
 };
 use crate::tests::server::common::setup_server;
 use crate::types::sqs::StartIndexerRequest;
+use crate::utils::env::get_environment_variable;
 
 #[rstest]
 #[tokio::test]
@@ -41,7 +41,8 @@ async fn create_webhook_indexer(#[future] setup_server: SocketAddr) {
     assert_eq!(body.indexer_type, IndexerType::Webhook);
 
     // check if the file exists on S3
-    assert_s3_contains_key(INDEXER_SERVICE_BUCKET, get_s3_script_key(body.id).as_str()).await;
+    let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
+    assert_s3_contains_key(&bucket_name, get_s3_script_key(body.id).as_str()).await;
 
     // check if the message is present on the queue
     let request = StartIndexerRequest { id: body.id, attempt_no: 1 };
