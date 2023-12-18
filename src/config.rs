@@ -95,16 +95,39 @@ async fn init_config() -> Config {
         AsyncDieselConnectionManager::<AsyncPgConnection>::new_with_config(database_config.url.to_string(), config);
     let pool = Pool::builder(manager).build().unwrap();
 
-    // init AWS config
-    let shared_config = aws_config::from_env().load().await;
+    let is_dev = env::var("DEV_ENV").unwrap_or_else(|_| String::from("false")).parse::<bool>().unwrap_or(false);
 
-    // init AWS SQS
-    let sqs_client = SqsClient::new(&shared_config);
+    tracing::info!("DEV environment: {}", is_dev);
 
-    // init AWS S3 client
-    let s3_client = S3Client::new(&shared_config);
+    if !is_dev {
+        // init AWS config
+        let shared_config = aws_config::from_env().load().await;
 
-    Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
+        // init AWS SQS
+        let sqs_client = SqsClient::new(&shared_config);
+
+        // init AWS S3 client
+        let s3_client = S3Client::new(&shared_config);
+
+        Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
+    } else {
+        let localstack_endpoint = env::var("LOCALSTACK_ENDPOINT").expect("LOCALSTACK_ENDPOINT must be set");
+        let shared_config = aws_config::from_env().load().await;
+
+        // init AWS SQS
+        let sqs_config =
+            aws_sdk_sqs::config::Builder::from(&shared_config).endpoint_url(localstack_endpoint.clone()).build();
+        let sqs_client = SqsClient::from_conf(sqs_config);
+
+        // init AWS S3 client
+        let s3_config = aws_sdk_s3::config::Builder::from(&shared_config)
+            .endpoint_url(localstack_endpoint)
+            .force_path_style(true)
+            .build();
+        let s3_client = S3Client::from_conf(s3_config);
+
+        Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
+    }
 }
 
 #[cfg(test)]
