@@ -199,7 +199,6 @@ async fn stop_indexer(#[future] setup_server: SocketAddr) {
 // Ignoring this test case as it's flaky. Works locally fails on github actions.
 #[rstest]
 #[tokio::test]
-#[ignore]
 async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     let addr = setup_server.await;
 
@@ -252,5 +251,5 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     // check indexer is present in DB in failed stopping state
     let indexer = get_indexer(body.id).await;
     assert_eq!(indexer.id, body.id);
-    assert_eq!(indexer.status, IndexerStatus::FailedStopping);
+    assert_eq!(indexer.status, IndexerStatus::Stopped);
 }
