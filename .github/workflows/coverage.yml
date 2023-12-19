@@ -71,12 +71,12 @@ jobs:
 
       - name: Download sink binaries
         run: |
-          wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.6/sink-webhook-x86_64-linux.gz
+          wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.8/sink-webhook-x86_64-linux.gz
           gunzip sink-webhook-x86_64-linux.gz
           sudo cp sink-webhook-x86_64-linux /bin/sink-webhook
           sudo chmod 777 /bin/sink-webhook
 
-          wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.8/sink-postgres-x86_64-linux.gz
+          wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.10/sink-postgres-x86_64-linux.gz
           gunzip sink-postgres-x86_64-linux.gz
           sudo cp sink-postgres-x86_64-linux /bin/sink-postgres
           sudo chmod 777 /bin/sink-postgres
