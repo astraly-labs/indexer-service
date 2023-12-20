@@ -72,9 +72,11 @@ async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateI
             _ => return Err(IndexerError::UnexpectedMultipartField(field_name.to_string())),
         };
     }
+
     if !create_indexer_request.is_ready() {
         return Err(IndexerError::FailedToBuildCreateIndexerRequest);
     }
+
     Ok(create_indexer_request)
 }
 

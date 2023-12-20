@@ -43,6 +43,7 @@ pub struct Config {
     s3_client: S3Client,
     pool: Arc<Pool<AsyncPgConnection>>,
     db_config: DatabaseConfig,
+    is_dev: bool,
 }
 
 impl Config {
@@ -68,6 +69,10 @@ impl Config {
 
     pub fn db_url(&self) -> &str {
         &self.db_config.url
+    }
+
+    pub fn is_dev(&self) -> bool {
+        self.is_dev
     }
 }
 
@@ -109,7 +114,14 @@ async fn init_config() -> Config {
         // init AWS S3 client
         let s3_client = S3Client::new(&shared_config);
 
-        Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
+        Config {
+            server: server_config,
+            sqs_client,
+            s3_client,
+            pool: Arc::new(pool),
+            db_config: database_config,
+            is_dev,
+        }
     } else {
         let localstack_endpoint = env::var("LOCALSTACK_ENDPOINT").expect("LOCALSTACK_ENDPOINT must be set");
         let shared_config = aws_config::from_env().load().await;
@@ -126,7 +138,14 @@ async fn init_config() -> Config {
             .build();
         let s3_client = S3Client::from_conf(s3_config);
 
-        Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
+        Config {
+            server: server_config,
+            sqs_client,
+            s3_client,
+            pool: Arc::new(pool),
+            db_config: database_config,
+            is_dev,
+        }
     }
 }
 
@@ -185,7 +204,14 @@ pub async fn init_config() -> Config {
         .build();
     let s3_client = S3Client::from_conf(s3_config);
 
-    Config { server: server_config, sqs_client, s3_client, pool: Arc::new(pool), db_config: database_config }
+    Config {
+        server: server_config,
+        sqs_client,
+        s3_client,
+        pool: Arc::new(pool),
+        db_config: database_config,
+        is_dev: true,
+    }
 }
 
 pub async fn config() -> Guard<Arc<Config>> {

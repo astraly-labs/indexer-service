@@ -72,8 +72,10 @@ async fn main() -> Result<(), AppError> {
     // initializes the SQS messages consumers
     init_consumers().await.map_err(AppError::Indexer)?;
 
-    // start all indexers that were running before the service was stopped
-    start_all_indexers().await.map_err(AppError::Indexer)?;
+    if !config.is_dev() {
+        // start all indexers that were running before the service was stopped
+        start_all_indexers().await.map_err(AppError::Indexer)?;
+    }
 
     axum::Server::bind(&socket_addr).serve(app.into_make_service()).await.map_err(internal_error)?;
 

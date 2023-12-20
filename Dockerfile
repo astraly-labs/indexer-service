@@ -72,7 +72,7 @@ FROM debian:12-slim AS final
 ARG UID=10001
 RUN apt update
 RUN apt install -y libpq-dev
-RUN apt-get install -y procps
+RUN apt-get install -y procps openssl
 
 # Copy the executable from the "build" stage.
 COPY --from=build /bin/server /bin/
