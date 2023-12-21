@@ -12,6 +12,7 @@ use strum_macros::{Display, EnumString};
 use uuid::Uuid;
 
 use crate::domain::models::types::AxumErrorResponse;
+use crate::grpc::apibara_sink_v1::GetStatusResponse;
 use crate::infra::errors::InfraError;
 
 #[derive(Clone, Default, Debug, PartialEq, EnumString, Serialize, Deserialize, Display, Copy)]
@@ -39,6 +40,29 @@ pub struct IndexerModel {
     pub process_id: Option<i64>,
     pub target_url: Option<String>,
     pub table_name: Option<String>,
+    pub status_server_port: Option<i32>,
+}
+
+#[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
+pub struct IndexerServerStatus {
+    pub status: i32,
+    pub starting_block: Option<u64>,
+    pub current_block: Option<u64>,
+    pub head_block: Option<u64>,
+    #[serde(rename = "reason")]
+    pub reason_: Option<String>,
+}
+
+impl From<GetStatusResponse> for IndexerServerStatus {
+    fn from(value: GetStatusResponse) -> Self {
+        Self {
+            status: value.status,
+            starting_block: value.starting_block,
+            current_block: value.current_block,
+            head_block: value.head_block,
+            reason_: value.reason,
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -77,6 +101,12 @@ pub enum IndexerError {
     InvalidIndexerType(String),
     #[error("failed to serialize {0}")]
     FailedToSerialize(String),
+    #[error("indexer status server port not found")]
+    IndexerStatusServerPortNotFound,
+    #[error("failed to connect to gRPC server")]
+    FailedToConnectGRPC(tonic::transport::Error),
+    #[error("gRPC request failed")]
+    GRPCRequestFailed(tonic::Status),
 }
 
 impl From<diesel::result::Error> for IndexerError {
