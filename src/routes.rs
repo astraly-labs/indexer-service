@@ -27,7 +27,7 @@ fn indexers_routes(state: AppState) -> Router<AppState> {
         .route("/stop/:id", post(stop_indexer))
         .route("/start/:id", post(start_indexer_api))
         .route("/:id", get(get_indexer))
-        .route("status/:id", get(get_indexer_status))
+        .route("/status/:id", get(get_indexer_status))
         .with_state(state)
 }
 
