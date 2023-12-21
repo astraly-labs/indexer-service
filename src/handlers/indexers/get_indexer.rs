@@ -43,3 +43,28 @@ pub async fn get_indexer_status(
 
     Ok(Json(status_response.into()))
 }
+
+pub async fn get_indexer_status_by_table_name(
+    State(state): State<AppState>,
+    PathExtractor(table_name): PathExtractor<String>,
+) -> Result<Json<IndexerServerStatus>, IndexerError> {
+    let repository = IndexerRepository::new(&state.pool);
+    let indexer_model = repository.get_by_table_name(table_name).await.map_err(IndexerError::InfraError)?;
+
+    let server_port = indexer_model.status_server_port.ok_or(IndexerError::IndexerStatusServerPortNotFound)?;
+
+    // Create a gRPC client
+    let endpoint = format!("http://localhost:{}", server_port);
+    let mut client = StatusClient::connect(endpoint).await.map_err(IndexerError::FailedToConnectGRPC)?;
+
+    // Create a GetStatusRequest
+    let request = tonic::Request::new(GetStatusRequest {});
+
+    // Fetch the status
+    let response = client.get_status(request).await.map_err(IndexerError::GRPCRequestFailed)?;
+
+    // Process the response
+    let status_response = response.into_inner();
+
+    Ok(Json(status_response.into()))
+}

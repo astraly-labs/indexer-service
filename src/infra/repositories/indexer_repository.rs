@@ -60,6 +60,7 @@ pub struct UpdateIndexerStatusAndProcessIdDb {
 pub trait Repository {
     async fn insert(&mut self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError>;
     async fn get(&self, id: Uuid) -> Result<IndexerModel, InfraError>;
+    async fn get_by_table_name(&self, table_name: String) -> Result<IndexerModel, InfraError>;
     async fn get_all(&self, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError>;
     async fn update_status(&mut self, indexer: UpdateIndexerStatusDb) -> Result<IndexerModel, InfraError>;
     async fn update_status_and_process_id(
@@ -86,6 +87,10 @@ impl Repository for IndexerRepository<'_> {
 
     async fn get(&self, id: Uuid) -> Result<IndexerModel, InfraError> {
         get(self.pool, id).await
+    }
+
+    async fn get_by_table_name(&self, table_name: String) -> Result<IndexerModel, InfraError> {
+        get_by_table_name(self.pool, table_name).await
     }
 
     async fn get_all(&self, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError> {
@@ -130,6 +135,20 @@ async fn get(pool: &Pool<AsyncPgConnection>, id: Uuid) -> Result<IndexerModel, I
     Ok(res)
 }
 
+async fn get_by_table_name(pool: &Pool<AsyncPgConnection>, table_name: String) -> Result<IndexerModel, InfraError> {
+    let mut conn = pool.get().await?;
+    let res = indexers::table
+        .filter(indexers::table_name.eq(table_name))
+        .filter(indexers::status.eq(IndexerStatus::Running.to_string()))
+        .select(IndexerDb::as_select())
+        .get_result::<IndexerDb>(&mut conn)
+        .await?
+        .try_into()
+        .map_err(InfraError::ParseError)?;
+
+    Ok(res)
+}
+
 async fn get_all(pool: &Pool<AsyncPgConnection>, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError> {
     let mut conn = pool.get().await?;
     let mut query = indexers::table.into_boxed::<diesel::pg::Pg>();
@@ -138,13 +157,13 @@ async fn get_all(pool: &Pool<AsyncPgConnection>, filter: IndexerFilter) -> Resul
     }
     let res: Vec<IndexerDb> = query.select(IndexerDb::as_select()).load::<IndexerDb>(&mut conn).await?;
 
-    let posts: Vec<IndexerModel> = res
+    let indexers: Vec<IndexerModel> = res
         .into_iter()
         .map(|indexer_db| indexer_db.try_into())
         .collect::<Result<Vec<IndexerModel>, ParseError>>()
         .map_err(InfraError::ParseError)?;
 
-    Ok(posts)
+    Ok(indexers)
 }
 
 async fn update_status(
