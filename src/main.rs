@@ -16,6 +16,9 @@ use crate::errors::internal_error;
 use crate::handlers::indexers::start_indexer::start_all_indexers;
 use crate::routes::app_router;
 
+/// gRPC clients
+mod grpc;
+
 /// Configuration of the service (AWS, DB, etc)
 mod config;
 /// Constants used accross the service

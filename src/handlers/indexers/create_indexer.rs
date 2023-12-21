@@ -49,7 +49,7 @@ impl CreateIndexerRequest {
         true
     }
 
-    /// Set a random available port for the GRPC status server
+    /// Set a random available port for the gRPC status server
     fn set_random_port(&mut self) {
         // Bind to a random port
         if let Ok(listener) = TcpListener::bind("localhost:0") {
