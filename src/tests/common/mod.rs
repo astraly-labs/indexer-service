@@ -84,6 +84,10 @@ impl Repository for MockRepository {
         let indexer = self.indexers.iter().find(|indexer| indexer.id == id);
         if let Some(indexer) = indexer { Ok(indexer.clone()) } else { Err(InfraError::NotFound) }
     }
+    async fn get_by_table_name(&self, table_name: String) -> Result<IndexerModel, InfraError> {
+        let indexer = self.indexers.iter().find(|indexer| indexer.table_name == Some(table_name.clone()));
+        if let Some(indexer) = indexer { Ok(indexer.clone()) } else { Err(InfraError::NotFound) }
+    }
     async fn get_all(&self, filter: IndexerFilter) -> Result<Vec<IndexerModel>, InfraError> {
         // Get all indexers with status filter if provided
         let indexers = match filter.status {
