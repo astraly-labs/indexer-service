@@ -9,7 +9,7 @@ diesel::table! {
         process_id -> Nullable<Int8>,
         target_url -> Nullable<Varchar>,
         table_name -> Nullable<Varchar>,
-        status_server_port -> Nullable<Int2>,
+        status_server_port -> Nullable<Int4>,
     }
 }
 
@@ -38,4 +38,7 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(indexers, spot_entry,);
+diesel::allow_tables_to_appear_in_same_query!(
+    indexers,
+    spot_entry,
+);

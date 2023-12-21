@@ -25,7 +25,7 @@ struct CreateIndexerRequest {
     data: Bytes,
     table_name: Option<String>,
     indexer_type: IndexerType,
-    status_server_port: i16,
+    status_server_port: i32,
 }
 
 impl CreateIndexerRequest {
@@ -52,10 +52,10 @@ impl CreateIndexerRequest {
     /// Set a random available port for the gRPC status server
     fn set_random_port(&mut self) {
         // Bind to a random port
-        if let Ok(listener) = TcpListener::bind("localhost:0") {
+        if let Ok(listener) = TcpListener::bind("127.0.0.1:0") {
             if let Ok(addr) = listener.local_addr() {
                 // Set the found port
-                self.status_server_port = addr.port() as i16;
+                self.status_server_port = addr.port() as i32;
             }
         }
     }
