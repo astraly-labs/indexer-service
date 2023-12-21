@@ -16,3 +16,13 @@ pub async fn get_indexer(
 
     Ok(Json(indexer_model))
 }
+
+pub async fn get_indexer_status(
+    State(state): State<AppState>,
+    PathExtractor(id): PathExtractor<Uuid>,
+) -> Result<Json<IndexerModel>, IndexerError> {
+    let repository = IndexerRepository::new(&state.pool);
+    let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;
+
+    Ok(Json(indexer_model))
+}

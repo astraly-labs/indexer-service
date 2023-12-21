@@ -5,7 +5,7 @@ use axum::Router;
 
 use crate::handlers::global::health::health_check;
 use crate::handlers::indexers::create_indexer::create_indexer;
-use crate::handlers::indexers::get_indexer::get_indexer;
+use crate::handlers::indexers::get_indexer::{get_indexer, get_indexer_status};
 use crate::handlers::indexers::start_indexer::start_indexer_api;
 use crate::handlers::indexers::stop_indexer::stop_indexer;
 use crate::AppState;
@@ -27,6 +27,7 @@ fn indexers_routes(state: AppState) -> Router<AppState> {
         .route("/stop/:id", post(stop_indexer))
         .route("/start/:id", post(start_indexer_api))
         .route("/:id", get(get_indexer))
+        .route("status/:id", get(get_indexer_status))
         .with_state(state)
 }
 

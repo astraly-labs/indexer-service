@@ -19,9 +19,10 @@ async fn test_get_indexer() {
         .insert(NewIndexerDb {
             id,
             status: "Created".to_string(),
-            indexer_type: "Webhook".to_string(),
+            type_: "Webhook".to_string(),
             target_url: Some("https://example.com".to_string()), // TODO: Mock webhook and test its behavior
             table_name: None,
+            status_server_port: None,
         })
         .await
         .unwrap();
@@ -49,9 +50,10 @@ async fn test_insert_indexer() {
         .insert(NewIndexerDb {
             id,
             status: "Created".to_string(),
-            indexer_type: "Webhook".to_string(),
+            type_: "Webhook".to_string(),
             target_url: Some("https://example.com".to_string()),
             table_name: None,
+            status_server_port: None,
         })
         .await
         .unwrap();
@@ -76,9 +78,10 @@ async fn test_update_status() {
         .insert(NewIndexerDb {
             id,
             status: "Created".to_string(),
-            indexer_type: "Webhook".to_string(),
+            type_: "Webhook".to_string(),
             target_url: Some("https://example.com".to_string()),
             table_name: None,
+            status_server_port: None,
         })
         .await
         .unwrap();
@@ -102,9 +105,10 @@ async fn test_update_status_and_process_id() {
         .insert(NewIndexerDb {
             id,
             status: "Created".to_string(),
-            indexer_type: "Webhook".to_string(),
+            type_: "Webhook".to_string(),
             target_url: Some("https://example.com".to_string()),
             table_name: None,
+            status_server_port: None,
         })
         .await
         .unwrap();
@@ -136,9 +140,10 @@ async fn test_get_all_indexers() {
             .insert(NewIndexerDb {
                 id,
                 status: "Created".to_string(),
-                indexer_type: "Webhook".to_string(),
+                type_: "Webhook".to_string(),
                 target_url: Some("https://example.com".to_string()),
                 table_name: None,
+                status_server_port: None,
             })
             .await
             .unwrap();
@@ -149,9 +154,10 @@ async fn test_get_all_indexers() {
         .insert(NewIndexerDb {
             id,
             status: "Running".to_string(),
-            indexer_type: "Webhook".to_string(),
+            type_: "Webhook".to_string(),
             target_url: Some("https://example.com".to_string()),
             table_name: None,
+            status_server_port: None,
         })
         .await
         .unwrap();

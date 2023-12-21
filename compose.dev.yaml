@@ -6,6 +6,13 @@ services:
     build: .
     env_file:
       - .env
+    environment:
+      - APIBARA_ETCD_URL=http://host.docker.internal:2379
+      - LOCALSTACK_ENDPOINT=http://localstack:4566
+      - DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432
+      - APIBARA_POSTGRES_CONNECTION_STRING=postgres://postgres:postgres@host.docker.internal:5432/postgres
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
     ports:
       - 8080:8080
     networks:

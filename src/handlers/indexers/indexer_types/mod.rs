@@ -36,6 +36,8 @@ pub trait Indexer {
         let etcd_url = get_environment_variable("APIBARA_ETCD_URL");
 
         let indexer_id = indexer.id.to_string();
+        let status_server_address = format!("0.0.0.0:{port}", port = indexer.status_server_port.unwrap_or(1234));
+
         let mut args = vec![
             "run",
             script_path.as_str(),
@@ -45,6 +47,8 @@ pub trait Indexer {
             etcd_url.as_str(),
             "--sink-id",
             indexer_id.as_str(),
+            "--status-server-address",
+            status_server_address.as_str(),
         ];
         args.extend_from_slice(extra_args);
 
@@ -205,6 +209,7 @@ mod tests {
             status: IndexerStatus::Created,
             target_url: Some("https://example.com".to_string()),
             table_name: None,
+            status_server_port: Some(1234),
         };
 
         // clear the sqs queue

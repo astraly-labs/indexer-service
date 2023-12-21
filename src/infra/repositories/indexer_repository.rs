@@ -18,10 +18,11 @@ use crate::infra::errors::InfraError;
 pub struct IndexerDb {
     pub id: Uuid,
     pub status: String,
-    pub indexer_type: String,
+    pub type_: String,
     pub process_id: Option<i64>,
     pub target_url: Option<String>,
     pub table_name: Option<String>,
+    pub status_server_port: Option<i16>,
 }
 
 #[derive(Deserialize)]
@@ -34,9 +35,10 @@ pub struct IndexerFilter {
 pub struct NewIndexerDb {
     pub id: Uuid,
     pub status: String,
-    pub indexer_type: String,
+    pub type_: String,
     pub target_url: Option<String>,
     pub table_name: Option<String>,
+    pub status_server_port: Option<i16>,
 }
 
 #[derive(Deserialize, Insertable)]
@@ -183,10 +185,11 @@ impl TryFrom<NewIndexerDb> for IndexerModel {
         let model = IndexerDb {
             id: value.id,
             status: value.status,
-            indexer_type: value.indexer_type,
+            type_: value.type_,
             target_url: value.target_url,
             process_id: None,
             table_name: value.table_name,
+            status_server_port: value.status_server_port,
         }
         .try_into()?;
         Ok(model)
@@ -200,9 +203,10 @@ impl TryFrom<IndexerDb> for IndexerModel {
             id: value.id,
             status: IndexerStatus::from_str(value.status.as_str())?,
             process_id: value.process_id,
-            indexer_type: IndexerType::from_str(value.indexer_type.as_str())?,
+            indexer_type: IndexerType::from_str(value.type_.as_str())?,
             target_url: value.target_url,
             table_name: value.table_name,
+            status_server_port: value.status_server_port,
         };
         Ok(model)
     }
@@ -234,10 +238,11 @@ mod tests {
         let indexer_db = IndexerDb {
             id,
             status: status.to_string(),
-            indexer_type: indexer_type.to_string(),
+            type_: indexer_type.to_string(),
             process_id,
             target_url: Some(target_url.to_string()),
             table_name: Some(table_name.into()),
+            status_server_port: Some(1234),
         };
 
         let indexer_model: Result<IndexerModel, ParseError> = indexer_db.try_into();
@@ -273,10 +278,11 @@ mod tests {
         let indexer_db = IndexerDb {
             id,
             status: status.to_string(),
-            indexer_type: indexer_type.to_string(),
+            type_: indexer_type.to_string(),
             process_id,
             target_url: Some(target_url.to_string()),
             table_name: Some(table_name.into()),
+            status_server_port: Some(1234),
         };
 
         let indexer_model: Result<IndexerModel, ParseError> = indexer_db.try_into();

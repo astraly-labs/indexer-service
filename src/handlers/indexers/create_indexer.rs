@@ -1,3 +1,4 @@
+use std::net::TcpListener;
 use std::str::FromStr;
 
 use axum::body::Bytes;
@@ -24,9 +25,11 @@ struct CreateIndexerRequest {
     data: Bytes,
     table_name: Option<String>,
     indexer_type: IndexerType,
+    status_server_port: i16,
 }
 
 impl CreateIndexerRequest {
+    /// Check if the request is ready to be processed
     fn is_ready(&self) -> bool {
         if self.data.is_empty() {
             return false;
@@ -44,6 +47,17 @@ impl CreateIndexerRequest {
             }
         };
         true
+    }
+
+    /// Set a random available port for the GRPC status server
+    fn set_random_port(&mut self) {
+        // Bind to a random port
+        if let Ok(listener) = TcpListener::bind("localhost:0") {
+            if let Ok(addr) = listener.local_addr() {
+                // Set the found port
+                self.status_server_port = addr.port() as i16;
+            }
+        }
     }
 }
 
@@ -73,6 +87,8 @@ async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateI
         };
     }
 
+    create_indexer_request.set_random_port();
+
     if !create_indexer_request.is_ready() {
         return Err(IndexerError::FailedToBuildCreateIndexerRequest);
     }
@@ -88,10 +104,11 @@ pub async fn create_indexer(
     let create_indexer_request = build_create_indexer_request(&mut request).await?;
     let new_indexer_db = indexer_repository::NewIndexerDb {
         status: IndexerStatus::Created.to_string(),
-        indexer_type: create_indexer_request.indexer_type.to_string(),
+        type_: create_indexer_request.indexer_type.to_string(),
         id,
         target_url: create_indexer_request.target_url,
         table_name: create_indexer_request.table_name,
+        status_server_port: Some(create_indexer_request.status_server_port),
     };
 
     let config = config().await;
