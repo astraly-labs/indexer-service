@@ -1,7 +1,6 @@
 version: "3"
 
 services:
-
   indexing:
     build: .
     env_file:
@@ -22,15 +21,15 @@ services:
     image: localstack/localstack:2.0
     hostname: localstack
     ports:
-      - '4566:4566' # LocalStack endpoint
-      - '4510-4559:4510-4559' # external services port range
+      - "4566:4566" # LocalStack endpoint
+      - "4510-4559:4510-4559" # external services port range
     environment:
       - SERVICES=sqs,s3
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOSTNAME_EXTERNAL=localstack
     volumes:
       - ./scripts/setup-localstack.sh:/etc/localstack/init/ready.d/script.sh
-      - '/var/run/docker.sock:/var/run/docker.sock'
+      - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - ls
 
