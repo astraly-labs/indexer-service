@@ -10,6 +10,8 @@ const filter = {
       fromAddress:
         "0x6df335982dddce41008e4c03f2546fa27276567b5274c7d0c1262f3c2b5d167",
       keys: [hash.getSelectorFromName("SubmittedSpotEntry")],
+      includeTransaction: true,
+      includeReceipt: true,
     },
   ],
 };
@@ -20,9 +22,9 @@ function escapeInvalidCharacters(str) {
 
 function decodeTransfersInBlock({ header, events }) {
   const { blockNumber, blockHash, timestamp } = header;
-  return events.map(({ event, receipt }) => {
+  return events.flatMap(({ event, receipt }) => {
     const { transactionHash } = receipt;
-    const dataId = `${transactionHash}_${event.index}`;
+    const dataId = `${transactionHash}_${event.index ?? 0}`;
 
     const [entryTimestamp, source, publisher, price, pairId, volume] =
       event.data;
@@ -59,9 +61,11 @@ function decodeTransfersInBlock({ header, events }) {
 // Configure indexer for streaming Starknet Goerli data starting at the specified block.
 export const config = {
   streamUrl: "https://goerli.starknet.a5a.ch",
-  startingBlock: 881742,
+  startingBlock: 881_742,
   network: "starknet",
   filter,
+  batchSize: 1,
+  finality: "DATA_STATUS_ACCEPTED",
   sinkType: "postgres",
   sinkOptions: {
     // Send data as returned by `transform`.
