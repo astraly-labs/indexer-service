@@ -169,6 +169,13 @@ pub async fn get_indexer(id: Uuid) -> IndexerModel {
     repository.get(id).await.unwrap()
 }
 
+/// Get an indexer of the specified id from the database
+pub async fn get_indexer_by_table_name(table_name: &str) -> IndexerModel {
+    let config = config().await;
+    let repository = IndexerRepository::new(config.pool());
+    repository.get_by_table_name(table_name.to_string()).await.unwrap()
+}
+
 /// Check if a process is running using the process id
 pub async fn is_process_running(process_id: i64) -> bool {
     Command::new("ps")

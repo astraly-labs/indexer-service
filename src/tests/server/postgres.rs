@@ -11,8 +11,8 @@ use crate::domain::models::types::AxumErrorResponse;
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::tests::common::constants::{TABLE_NAME, WORKING_APIBARA_SCRIPT};
 use crate::tests::common::utils::{
-    assert_queue_contains_message_with_indexer_id, assert_s3_contains_key, get_indexer, send_create_indexer_request,
-    send_create_postgres_indexer_request,
+    assert_queue_contains_message_with_indexer_id, assert_s3_contains_key, get_indexer, get_indexer_by_table_name,
+    send_create_indexer_request, send_create_postgres_indexer_request,
 };
 use crate::tests::server::common::setup_server;
 use crate::types::sqs::StartIndexerRequest;
@@ -50,6 +50,13 @@ async fn create_postgres_indexer(#[future] setup_server: SocketAddr) {
 
     // check indexer is present in DB in created state
     let indexer = get_indexer(body.id).await;
+    assert_eq!(indexer.id, body.id);
+    assert_eq!(indexer.status, IndexerStatus::Created);
+    assert_eq!(indexer.indexer_type, IndexerType::Postgres);
+    assert_eq!(indexer.table_name, Some(TABLE_NAME.into()));
+
+    // check that we can get the indexer by table name
+    let indexer = get_indexer_by_table_name(TABLE_NAME).await;
     assert_eq!(indexer.id, body.id);
     assert_eq!(indexer.status, IndexerStatus::Created);
 }

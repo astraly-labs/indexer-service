@@ -139,7 +139,6 @@ async fn get_by_table_name(pool: &Pool<AsyncPgConnection>, table_name: String) -
     let mut conn = pool.get().await?;
     let res = indexers::table
         .filter(indexers::table_name.eq(table_name))
-        .filter(indexers::status.eq(IndexerStatus::Running.to_string()))
         .select(IndexerDb::as_select())
         .get_result::<IndexerDb>(&mut conn)
         .await?
