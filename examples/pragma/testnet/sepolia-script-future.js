@@ -8,8 +8,8 @@ const filter = {
   events: [
     {
       fromAddress:
-        "0x6df335982dddce41008e4c03f2546fa27276567b5274c7d0c1262f3c2b5d167",
-      keys: [hash.getSelectorFromName("SubmittedSpotEntry")],
+        "0x36031daa264c24520b11d93af622c848b2499b66b41d611bac95e13cfca131a",
+      keys: [hash.getSelectorFromName("SubmittedFutureEntry")],
       includeTransaction: true,
       includeReceipt: true,
     },
@@ -26,8 +26,15 @@ function decodeTransfersInBlock({ header, events }) {
     const { transactionHash } = receipt;
     const dataId = `${transactionHash}_${event.index ?? 0}`;
 
-    const [entryTimestamp, source, publisher, price, pairId, volume] =
-      event.data;
+    const [
+      entryTimestamp,
+      source,
+      publisher,
+      price,
+      pairId,
+      volume,
+      expirationTimestamp,
+    ] = event.data;
 
     // Convert felts to string
     const publisherName = escapeInvalidCharacters(
@@ -42,7 +49,7 @@ function decodeTransfersInBlock({ header, events }) {
 
     // Convert to snake_case because it works better with postgres.
     return {
-      network: "starknet-goerli",
+      network: "starknet-sepolia",
       pair_id: pairIdName,
       data_id: dataId,
       block_hash: blockHash,
@@ -54,18 +61,19 @@ function decodeTransfersInBlock({ header, events }) {
       publisher: publisherName,
       source: sourceName,
       volume: +volume,
+      expiration_timestamp: new Date(Number(expirationTimestamp)).toISOString(),
     };
   });
 }
 
 // Configure indexer for streaming Starknet Goerli data starting at the specified block.
 export const config = {
-  streamUrl: "https://goerli.starknet.a5a.ch",
-  startingBlock: 881_742,
+  streamUrl: "https://sepolia.starknet.a5a.ch",
+  startingBlock: 16200,
   network: "starknet",
-  filter,
   batchSize: 1,
   finality: "DATA_STATUS_ACCEPTED",
+  filter,
   sinkType: "postgres",
   sinkOptions: {
     // Send data as returned by `transform`.
