@@ -11,7 +11,7 @@ const filter = {
         "0x36031daa264c24520b11d93af622c848b2499b66b41d611bac95e13cfca131a",
       keys: [hash.getSelectorFromName("SubmittedSpotEntry")],
       includeTransaction: true,
-      includeReceipt: true,
+      includeReceipt: false,
     },
   ],
 };
@@ -22,8 +22,9 @@ function escapeInvalidCharacters(str) {
 
 function decodeTransfersInBlock({ header, events }) {
   const { blockNumber, blockHash, timestamp } = header;
-  return events.flatMap(({ event, receipt }) => {
-    const { transactionHash } = receipt;
+  return events.flatMap(({ event, transaction }) => {
+    const transactionHash = transaction.meta.hash;
+
     const dataId = `${transactionHash}_${event.index ?? 0}`;
 
     const [entryTimestamp, source, publisher, price, pairId, volume] =

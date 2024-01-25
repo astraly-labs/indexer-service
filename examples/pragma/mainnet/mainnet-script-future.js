@@ -11,7 +11,7 @@ const filter = {
         "0x2a85bd616f912537c50a49a4076db02c00b29b2cdc8a197ce92ed1837fa875b",
       keys: [hash.getSelectorFromName("SubmittedFutureEntry")],
       includeTransaction: true,
-      includeReceipt: true,
+      includeReceipt: false,
     },
   ],
 };
@@ -22,8 +22,9 @@ function escapeInvalidCharacters(str) {
 
 function decodeTransfersInBlock({ header, events }) {
   const { blockNumber, blockHash, timestamp } = header;
-  return events.flatMap(({ event, receipt }) => {
-    const { transactionHash } = receipt;
+  return events.flatMap(({ event, transaction }) => {
+    const transactionHash = transaction.meta.hash;
+
     const dataId = `${transactionHash}_${event.index ?? 0}`;
 
     const [
@@ -72,7 +73,7 @@ export const config = {
   startingBlock: 416_000,
   network: "starknet",
   filter,
-  sinkType: "console",
+  sinkType: "postgres",
   finality: "DATA_STATUS_ACCEPTED",
   batchSize: 1,
   sinkOptions: {
