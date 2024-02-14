@@ -6,7 +6,7 @@ services:
     env_file:
       - .env
     environment:
-      - APIBARA_ETCD_URL=http://host.docker.internal:2379
+      - APIBARA_REDIS_URL=http://host.docker.internal:6379
       - LOCALSTACK_ENDPOINT=http://localstack:4566
       - DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432
       - APIBARA_POSTGRES_CONNECTION_STRING=postgres://postgres:postgres@host.docker.internal:5432/postgres

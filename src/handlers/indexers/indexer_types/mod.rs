@@ -33,7 +33,7 @@ pub trait Indexer {
     ) -> Result<u32, IndexerError> {
         let script_path = get_script_tmp_directory(indexer.id);
         let auth_token = get_environment_variable("APIBARA_AUTH_TOKEN");
-        let etcd_url = get_environment_variable("APIBARA_ETCD_URL");
+        let redis_url = get_environment_variable("APIBARA_REDIS_URL");
 
         let indexer_id = indexer.id.to_string();
         let status_server_address = format!("0.0.0.0:{port}", port = indexer.status_server_port.unwrap_or(1234));
@@ -43,8 +43,8 @@ pub trait Indexer {
             script_path.as_str(),
             "--auth-token",
             auth_token.as_str(),
-            "--persist-to-etcd",
-            etcd_url.as_str(),
+            "--persist-to-redis",
+            redis_url.as_str(),
             "--sink-id",
             indexer_id.as_str(),
             "--status-server-address",

@@ -20,7 +20,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       APIBARA_AUTH_TOKEN: ${{ secrets.APIBARA_AUTH_TOKEN }}
-      APIBARA_ETCD_URL: http://localhost:2379
+      APIBARA_REDIS_URL: http://localhost:6379
       INDEXER_SERVICE_BUCKET: indexer-service
 
     services:
@@ -51,13 +51,15 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      etcd:
-        image: bitnami/etcd:3.5.0
-        ports:
-          - 2379:2379
-          - 2380:2380
-        env:
-          ALLOW_NONE_AUTHENTICATION: yes
+      redis:
+        # Docker Hub image
+        image: redis
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - uses: actions/checkout@v3
@@ -71,12 +73,12 @@ jobs:
 
       - name: Download sink binaries
         run: |
-          wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.3.8/sink-webhook-x86_64-linux.gz
+          wget https://github.com/apibara/dna/releases/download/sink-webhook/v0.4.3/sink-webhook-x86_64-linux.gz
           gunzip sink-webhook-x86_64-linux.gz
           sudo cp sink-webhook-x86_64-linux /bin/sink-webhook
           sudo chmod 777 /bin/sink-webhook
 
-          wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.4.10/sink-postgres-x86_64-linux.gz
+          wget https://github.com/apibara/dna/releases/download/sink-postgres/v0.5.5/sink-postgres-x86_64-linux.gz
           gunzip sink-postgres-x86_64-linux.gz
           sudo cp sink-postgres-x86_64-linux /bin/sink-postgres
           sudo chmod 777 /bin/sink-postgres
