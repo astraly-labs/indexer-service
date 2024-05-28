@@ -26,7 +26,7 @@ function decodeTransfersInBlock({ header, events }) {
     const transactionHash = transaction.meta.hash;
 
     const invoke_tx = transaction.invokeV1 ?? transaction.invokeV3;
-    const senderAddress = invoke_tx.sender_address;
+    const senderAddress = invoke_tx.senderAddress;
 
     const dataId = `${transactionHash}_${event.index ?? 0}`;
 
