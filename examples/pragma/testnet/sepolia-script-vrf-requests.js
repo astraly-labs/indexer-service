@@ -6,7 +6,7 @@
  */
 
 const fromAddress =
-  "0x693d551265f0be7ccb3c869c64b5920929caaf486497788d43cb37dd17d6be6";
+  "0x60c69136b39319547a4df303b6b3a26fab8b2d78de90b6bd215ce82e9cb515c";
 
 // RandomnessRequest event selector
 const requestSelector =
@@ -17,8 +17,8 @@ const statusChangeSelector =
   "0x015510b399942790499934b72bc68b883f0905dee5da5aa36e489c9ffb096b8c";
 
 export const config = {
-  streamUrl: "https://goerli.starknet.a5a.ch",
-  startingBlock: 908_100,
+  streamUrl: "https://sepolia.starknet.a5a.ch",
+  startingBlock: 21500,
   network: "starknet",
   batchSize: 1,
   finality: "DATA_STATUS_ACCEPTED",
@@ -41,7 +41,6 @@ export const config = {
   },
   sinkType: "postgres",
   sinkOptions: {
-    tableName: "vrf_requests",
     entityMode: true,
   },
 };
@@ -63,7 +62,7 @@ export default function transform({ header, events }) {
       return {
         insert: {
           data_id: `${transaction.meta.hash}_${event.index}`,
-          network: "starknet-goerli",
+          network: "starknet-sepolia",
           request_id: +requestId,
           seed: +seed,
           created_at: timestamp,
@@ -80,11 +79,13 @@ export default function transform({ header, events }) {
       };
     } else if (event.keys[0] == statusChangeSelector) {
       // Update request entity.
+      const callerAddress = event.data[0];
       const requestId = event.data[1];
       const status = event.data[2];
       return {
         entity: {
           request_id: +requestId,
+          requestor_address: callerAddress,
         },
         update: {
           status: +status,
