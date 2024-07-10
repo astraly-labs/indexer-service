@@ -65,7 +65,7 @@ export const config = {
   streamUrl: "https://pragma-mainnet.starknet.a5a.ch",
   startingBlock: 416_000,
   network: "starknet",
-  finality: "DATA_STATUS_ACCEPTED",
+  finality: "DATA_STATUS_PENDING",
   filter,
   sinkType: "postgres",
   sinkOptions: {

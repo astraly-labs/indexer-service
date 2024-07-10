@@ -21,7 +21,7 @@ export const config = {
   startingBlock: 21500,
   network: "starknet",
   batchSize: 1,
-  finality: "DATA_STATUS_ACCEPTED",
+  finality: "DATA_STATUS_PENDING",
   filter: {
     header: { weak: true },
     events: [

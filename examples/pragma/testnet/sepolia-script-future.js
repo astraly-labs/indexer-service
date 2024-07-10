@@ -72,7 +72,7 @@ export const config = {
   startingBlock: 16200,
   network: "starknet",
   batchSize: 1,
-  finality: "DATA_STATUS_ACCEPTED",
+  finality: "DATA_STATUS_PENDING",
   filter,
   sinkType: "postgres",
   sinkOptions: {

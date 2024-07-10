@@ -74,7 +74,7 @@ export const config = {
   network: "starknet",
   filter,
   sinkType: "postgres",
-  finality: "DATA_STATUS_ACCEPTED",
+  finality: "DATA_STATUS_PENDING",
   batchSize: 1,
   sinkOptions: {
     // Send data as returned by `transform`.
