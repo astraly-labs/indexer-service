@@ -69,7 +69,7 @@ function decodeTransfersInBlock({ header, events }) {
 // Configure indexer for streaming Starknet Goerli data starting at the specified block.
 export const config = {
   streamUrl: "https://sepolia.starknet.a5a.ch",
-  startingBlock: 16200,
+  startingBlock: Number(Deno.env.get("STARTING_BLOCK") || 16200),
   network: "starknet",
   batchSize: 1,
   finality: "DATA_STATUS_PENDING",

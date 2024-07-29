@@ -18,7 +18,7 @@ const statusChangeSelector =
 
 export const config = {
   streamUrl: "https://sepolia.starknet.a5a.ch",
-  startingBlock: 21500,
+  startingBlock: Number(Deno.env.get("STARTING_BLOCK") || 21500),
   network: "starknet",
   batchSize: 1,
   finality: "DATA_STATUS_PENDING",
