@@ -5,9 +5,16 @@ use uuid::Uuid;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerServerStatus};
 use crate::grpc::apibara_sink_v1::status_client::StatusClient;
 use crate::grpc::apibara_sink_v1::GetStatusRequest;
-use crate::infra::repositories::indexer_repository::{IndexerRepository, Repository};
+use crate::infra::repositories::indexer_repository::{IndexerFilter, IndexerRepository, Repository};
 use crate::utils::PathExtractor;
 use crate::AppState;
+
+pub async fn get_indexers(State(state): State<AppState>) -> Result<Json<Vec<IndexerModel>>, IndexerError> {
+    let repository = IndexerRepository::new(&state.pool);
+    let indexers = repository.get_all(IndexerFilter { status: None }).await.map_err(IndexerError::InfraError)?;
+
+    Ok(Json(indexers))
+}
 
 pub async fn get_indexer(
     State(state): State<AppState>,

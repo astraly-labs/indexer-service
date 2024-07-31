@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 use crate::config::config;
 use crate::domain::models::indexer::{IndexerModel, IndexerType};
-use crate::infra::repositories::indexer_repository::{IndexerRepository, Repository};
+use crate::infra::repositories::indexer_repository::{IndexerFilter, IndexerRepository, Repository};
 use crate::tests::common::constants::{TABLE_NAME, WEHBHOOK_URL};
 
 /// Clears the database in the specified db_url. It first closes all connections
@@ -167,6 +167,13 @@ pub async fn get_indexer(id: Uuid) -> IndexerModel {
     let config = config().await;
     let repository = IndexerRepository::new(config.pool());
     repository.get(id).await.unwrap()
+}
+
+/// Get all indexers from the database
+pub async fn get_indexers() -> Vec<IndexerModel> {
+    let config: arc_swap::Guard<std::sync::Arc<crate::config::Config>> = config().await;
+    let repository = IndexerRepository::new(config.pool());
+    repository.get_all(IndexerFilter { status: None }).await.unwrap()
 }
 
 /// Get an indexer of the specified id from the database

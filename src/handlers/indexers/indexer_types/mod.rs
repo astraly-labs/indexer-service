@@ -50,7 +50,7 @@ pub trait Indexer {
             "--status-server-address",
             status_server_address.as_str(),
             "--allow-env-from-env",
-            "STARTING_BLOCK"
+            "STARTING_BLOCK",
         ];
         args.extend_from_slice(extra_args);
 
