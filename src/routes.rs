@@ -5,7 +5,9 @@ use axum::Router;
 
 use crate::handlers::global::health::health_check;
 use crate::handlers::indexers::create_indexer::create_indexer;
-use crate::handlers::indexers::get_indexer::{get_indexer, get_indexer_status, get_indexer_status_by_table_name};
+use crate::handlers::indexers::get_indexer::{
+    get_indexer, get_indexer_status, get_indexer_status_by_table_name, get_indexers,
+};
 use crate::handlers::indexers::start_indexer::start_indexer_api;
 use crate::handlers::indexers::stop_indexer::stop_indexer;
 use crate::AppState;
@@ -24,6 +26,7 @@ async fn handler_404() -> impl IntoResponse {
 fn indexers_routes(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/", post(create_indexer))
+        .route("/indexers", get(get_indexers))
         .route("/stop/:id", post(stop_indexer))
         .route("/start/:id", post(start_indexer_api))
         .route("/:id", get(get_indexer))

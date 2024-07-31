@@ -17,8 +17,9 @@ use crate::handlers::indexers::fail_indexer::fail_indexer;
 use crate::routes::app_router;
 use crate::tests::common::constants::{BROKEN_APIBARA_SCRIPT, WEHBHOOK_URL, WORKING_APIBARA_SCRIPT};
 use crate::tests::common::utils::{
-    assert_queue_contains_message_with_indexer_id, get_indexer, is_process_running, send_create_indexer_request,
-    send_create_webhook_indexer_request, send_start_indexer_request, send_stop_indexer_request,
+    assert_queue_contains_message_with_indexer_id, get_indexer, get_indexers, is_process_running,
+    send_create_indexer_request, send_create_webhook_indexer_request, send_start_indexer_request,
+    send_stop_indexer_request,
 };
 use crate::types::sqs::{StartIndexerRequest, StopIndexerRequest};
 use crate::AppState;
@@ -122,6 +123,55 @@ async fn start_indexer(#[future] setup_server: SocketAddr) {
 
     // check the process is actually up
     assert!(is_process_running(indexer.process_id.unwrap()).await,);
+}
+
+#[rstest]
+#[tokio::test]
+async fn start_two_indexers(#[future] setup_server: SocketAddr) {
+    let addr = setup_server.await;
+
+    let client = hyper::Client::new();
+    let config = config().await;
+
+    // clear the sqs queue
+    config.sqs_client().purge_queue().queue_url(START_INDEXER_QUEUE).send().await.unwrap();
+
+    // Create indexer
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body: IndexerModel = serde_json::from_slice(&body).unwrap();
+
+    // start the indexer
+    send_start_indexer_request(client.clone(), body.id, addr).await;
+
+    // check indexer is present in DB in running state
+    let indexer = get_indexer(body.id).await;
+    assert_eq!(indexer.id, body.id);
+    assert_eq!(indexer.status, IndexerStatus::Running);
+
+    // check the process is actually up
+    assert!(is_process_running(indexer.process_id.unwrap()).await);
+
+    // Create another indexer
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body: IndexerModel = serde_json::from_slice(&body).unwrap();
+
+    // start the indexer
+    send_start_indexer_request(client.clone(), body.id, addr).await;
+
+    // check indexer is present in DB in running state
+    let indexer = get_indexer(body.id).await;
+    assert_eq!(indexer.id, body.id);
+    assert_eq!(indexer.status, IndexerStatus::Running);
+
+    // check the process is actually up
+    assert!(is_process_running(indexer.process_id.unwrap()).await);
+
+    let indexers = get_indexers().await;
+    assert_eq!(indexers.len(), 2);
 }
 
 #[rstest]
@@ -252,4 +302,59 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     let indexer = get_indexer(body.id).await;
     assert_eq!(indexer.id, body.id);
     assert_eq!(indexer.status, IndexerStatus::Stopped);
+}
+
+#[rstest]
+#[tokio::test]
+async fn get_indexer_test(#[future] setup_server: SocketAddr) {
+    let addr = setup_server.await;
+
+    let client = hyper::Client::new();
+
+    // Create indexer
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body: IndexerModel = serde_json::from_slice(&body).unwrap();
+
+    // get the indexer
+    let response = client
+        .request(
+            Request::builder().uri(format!("http://{}/v1/indexers/{}", addr, body.id)).body(Body::empty()).unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body: IndexerModel = serde_json::from_slice(&body).unwrap();
+    assert_eq!(body.id, body.id);
+}
+
+#[rstest]
+#[tokio::test]
+async fn get_all_indexers_test(#[future] setup_server: SocketAddr) {
+    let addr = setup_server.await;
+
+    let client = hyper::Client::new();
+
+    // Create indexer
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body: IndexerModel = serde_json::from_slice(&body).unwrap();
+
+    // get the indexers
+    let response = client
+        .request(Request::builder().uri(format!("http://{}/v1/indexers", addr)).body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let response_body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let response_body: Vec<IndexerModel> = serde_json::from_slice(&response_body).unwrap();
+    assert_eq!(response_body.len(), 1);
+    assert_eq!(response_body[0].id, body.id);
 }
