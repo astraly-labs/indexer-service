@@ -1,8 +1,8 @@
-use axum::http::{HeaderValue, Method, StatusCode};
+use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::routing::{get, post};
 use axum::Router;
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 
 use crate::handlers::global::health::health_check;
 use crate::handlers::indexers::create_indexer::create_indexer;
@@ -18,11 +18,7 @@ pub fn app_router(state: AppState) -> Router<AppState> {
         .nest("/", global_routes(state.clone()))
         .nest("/v1/indexers", indexers_routes(state))
         .fallback(handler_404)
-        .layer(
-            CorsLayer::new()
-                .allow_origin("http://localhost:3000".parse::<HeaderValue>().unwrap())
-                .allow_methods([Method::GET]),
-        )
+        .layer(CorsLayer::new().allow_origin(Any).allow_methods(Any))
 }
 
 async fn handler_404() -> impl IntoResponse {
