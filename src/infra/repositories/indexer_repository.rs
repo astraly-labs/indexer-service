@@ -58,6 +58,7 @@ pub struct UpdateIndexerStatusAndProcessIdDb {
 
 #[async_trait]
 pub trait Repository {
+    async fn delete(&mut self, id: Uuid) -> Result<(), InfraError>;
     async fn insert(&mut self, new_indexer: NewIndexerDb) -> Result<IndexerModel, InfraError>;
     async fn get(&self, id: Uuid) -> Result<IndexerModel, InfraError>;
     async fn get_by_table_name(&self, table_name: String) -> Result<IndexerModel, InfraError>;
@@ -101,6 +102,10 @@ impl Repository for IndexerRepository<'_> {
         update_status(self.pool, indexer).await
     }
 
+    async fn delete(&mut self, id: Uuid) -> Result<(), InfraError> {
+        delete(self.pool, id).await
+    }
+
     async fn update_status_and_process_id(
         &mut self,
         indexer: UpdateIndexerStatusAndProcessIdDb,
@@ -133,6 +138,13 @@ async fn get(pool: &Pool<AsyncPgConnection>, id: Uuid) -> Result<IndexerModel, I
         .map_err(InfraError::ParseError)?;
 
     Ok(res)
+}
+
+async fn delete(pool: &Pool<AsyncPgConnection>, id: Uuid) -> Result<(), InfraError> {
+    let mut conn = pool.get().await?;
+    diesel::delete(indexers::table.filter(indexers::id.eq(id))).execute(&mut conn).await?;
+
+    Ok(())
 }
 
 async fn get_by_table_name(pool: &Pool<AsyncPgConnection>, table_name: String) -> Result<IndexerModel, InfraError> {

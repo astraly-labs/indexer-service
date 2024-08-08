@@ -30,8 +30,13 @@ function decodeTransfersInBlock({ header, events }) {
 
     const dataId = `${transactionHash}_${event.index ?? 0}`;
 
-    const [pairId, checkpointTimestamp, price, aggregationMode, nbSourcesAggregated] =
-      event.data;
+    const [
+      pairId,
+      checkpointTimestamp,
+      price,
+      aggregationMode,
+      nbSourcesAggregated,
+    ] = event.data;
 
     // Convert felts to string
     const pairIdName = escapeInvalidCharacters(

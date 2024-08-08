@@ -1,4 +1,5 @@
 pub mod create_indexer;
+pub mod delete_indexer;
 pub mod fail_indexer;
 pub mod get_indexer;
 mod indexer_types;
