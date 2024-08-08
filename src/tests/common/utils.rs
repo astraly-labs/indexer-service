@@ -152,7 +152,7 @@ pub async fn send_stop_indexer_request(client: Client<HttpConnector>, id: Uuid, 
 /// - id: The id of the indexer to stop
 /// - addr: The address of the server to send the request to
 pub async fn send_delete_indexer_request(client: Client<HttpConnector>, id: Uuid, addr: SocketAddr) -> Response<Body> {
-    let response = client
+    client
         .request(
             Request::builder()
                 .method(http::Method::DELETE)
@@ -161,8 +161,7 @@ pub async fn send_delete_indexer_request(client: Client<HttpConnector>, id: Uuid
                 .unwrap(),
         )
         .await
-        .unwrap();
-    response
+        .unwrap()
 }
 
 /// Asserts that a queue contains a message which has a body equal to the
