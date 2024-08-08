@@ -18,8 +18,8 @@ use crate::routes::app_router;
 use crate::tests::common::constants::{BROKEN_APIBARA_SCRIPT, WEHBHOOK_URL, WORKING_APIBARA_SCRIPT};
 use crate::tests::common::utils::{
     assert_queue_contains_message_with_indexer_id, get_indexer, get_indexers, is_process_running,
-    send_create_indexer_request, send_create_webhook_indexer_request, send_start_indexer_request,
-    send_stop_indexer_request,
+    send_create_indexer_request, send_create_webhook_indexer_request, send_delete_indexer_request,
+    send_start_indexer_request, send_stop_indexer_request,
 };
 use crate::types::sqs::{StartIndexerRequest, StopIndexerRequest};
 use crate::AppState;
@@ -357,4 +357,64 @@ async fn get_all_indexers_test(#[future] setup_server: SocketAddr) {
     let response_body: Vec<IndexerModel> = serde_json::from_slice(&response_body).unwrap();
     assert_eq!(response_body.len(), 1);
     assert_eq!(response_body[0].id, body.id);
+}
+
+#[rstest]
+#[tokio::test]
+async fn delete_indexer_test_works_only_when_stopped(#[future] setup_server: SocketAddr) {
+    let addr = setup_server.await;
+
+    let client = hyper::Client::new();
+
+    // Create indexer
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body: IndexerModel = serde_json::from_slice(&body).unwrap();
+
+    // stop the indexer
+    send_stop_indexer_request(client.clone(), body.id, addr).await;
+
+    // delete the indexer
+    let response = send_delete_indexer_request(client.clone(), body.id, addr).await;
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // check indexer is not present in DB
+    let indexers = get_indexers().await;
+    assert_eq!(indexers.len(), 0);
+}
+
+#[rstest]
+#[tokio::test]
+async fn test_delete_indexer_fail_if_not_stopped(#[future] setup_server: SocketAddr) {
+    let addr = setup_server.await;
+
+    let client = hyper::Client::new();
+
+    // Create indexer
+    let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
+
+    let body = hyper::body::to_bytes(response.into_body()).await.unwrap();
+    let body: IndexerModel = serde_json::from_slice(&body).unwrap();
+
+    // start the indexer
+    send_start_indexer_request(client.clone(), body.id, addr).await;
+
+    // delete the indexer
+    let response = client
+        .request(
+            Request::builder()
+                .uri(format!("http://{}/v1/indexers/delete/{}", addr, body.id))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+
+    // check indexer is present in DB
+    let indexer = get_indexer(body.id).await;
+    assert_eq!(indexer.id, body.id);
+    assert_eq!(indexer.status, IndexerStatus::Running);
 }

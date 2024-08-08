@@ -146,6 +146,25 @@ pub async fn send_stop_indexer_request(client: Client<HttpConnector>, id: Uuid, 
     assert_eq!(response.status(), StatusCode::OK);
 }
 
+/// Sends a request to stop the indexer with the specified script path.
+/// Arguments
+/// - client: The hyper client to use to send the request
+/// - id: The id of the indexer to stop
+/// - addr: The address of the server to send the request to
+pub async fn send_delete_indexer_request(client: Client<HttpConnector>, id: Uuid, addr: SocketAddr) -> Response<Body> {
+    let response = client
+        .request(
+            Request::builder()
+                .method(http::Method::DELETE)
+                .uri(format!("http://{}/v1/indexers/delete/{}", addr, id))
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    response
+}
+
 /// Asserts that a queue contains a message which has a body equal to the
 /// id of the specified indexer
 pub async fn assert_queue_contains_message_with_indexer_id(queue_url: &str, body: String) {

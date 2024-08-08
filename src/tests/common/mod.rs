@@ -80,6 +80,11 @@ impl Repository for MockRepository {
         self.indexers.push(indexer.clone());
         Ok(indexer)
     }
+    async fn delete(&mut self, id: Uuid) -> Result<(), InfraError> {
+        // Delete the indexer from the mock database
+        self.indexers.retain(|indexer| indexer.id != id);
+        Ok(())
+    }
     async fn get(&self, id: Uuid) -> Result<IndexerModel, InfraError> {
         let indexer = self.indexers.iter().find(|indexer| indexer.id == id);
         if let Some(indexer) = indexer { Ok(indexer.clone()) } else { Err(InfraError::NotFound) }
