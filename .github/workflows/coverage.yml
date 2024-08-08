@@ -95,6 +95,8 @@ jobs:
           awslocal sqs create-queue --queue-name indexer-service-stop-indexer
           awslocal sqs list-queues
 
+      - uses: Swatinem/rust-cache@v2
+
       - name: Clean workspace
         run: |
           cargo llvm-cov clean --workspace
