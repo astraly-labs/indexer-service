@@ -8,6 +8,8 @@ const AssertionDisputedSelector = "0x00de4da447be33bf5505a0018212bab8129076e71fa
 
 const AssertionSettledSelector = "0x00ed635610f8859765fb89b19bec7866c02bbc2f03bb048acec6ba6536aa7cb9";
 
+const ContractAddress = "0x067f9d9874d34e45a0c7dfe3e29312b6fcd2fb5f7feac351ce06a99c7b8cea35"
+
 const filter = {
   // Only request header if any event matches.
   header: {
@@ -16,21 +18,21 @@ const filter = {
   events: [
     {
       fromAddress:
-        "0x067f9d9874d34e45a0c7dfe3e29312b6fcd2fb5f7feac351ce06a99c7b8cea35",
+      ContractAddress,
       keys: [AssertionMadeSelector],
       includeTransaction: true,
       includeReceipt: false,
     },
     {
       fromAddress:
-        "0x067f9d9874d34e45a0c7dfe3e29312b6fcd2fb5f7feac351ce06a99c7b8cea35",
+      ContractAddress,
       keys: [AssertionSettledSelector],
       includeTransaction: true,
       includeReceipt: false,
     },
     {
       fromAddress:
-        "0x067f9d9874d34e45a0c7dfe3e29312b6fcd2fb5f7feac351ce06a99c7b8cea35",
+      ContractAddress,
       keys: [AssertionDisputedSelector],
       includeTransaction: true,
       includeReceipt: false,
@@ -38,9 +40,6 @@ const filter = {
   ],
 };
 
-function escapeInvalidCharacters(str) {
-  return str.replace(/^[\x00-\x1F]+/, "");
-}
 
 function trimLeadingZeros(hexString) {
   // Check if the string starts with '0x'
