@@ -4,11 +4,12 @@ import { hash, shortString } from "https://esm.run/starknet@5.14";
 
 const AssertionMadeSelector = "0x02b74480ce203d4ca6ee46c062a2d658129587cdccb3904c52a6f4dfb406a3f2";
 
-const AssertionDisputedSelector = "0x00de4da447be33bf5505a0018212bab8129076e71fa0ac98e25afad0fa4a866f"
+const AssertionDisputedSelector = "0x033efc8167fe91406d16c1680e593c3c2cad864220645cc2a48efd67e8f7ca73"
 
 const AssertionSettledSelector = "0x00ed635610f8859765fb89b19bec7866c02bbc2f03bb048acec6ba6536aa7cb9";
 
-const ContractAddress = "0x067f9d9874d34e45a0c7dfe3e29312b6fcd2fb5f7feac351ce06a99c7b8cea35"
+const ContractAddress = "0x04d559e9a6bedc3cea5cf87961e24a87340699ff793ad1c6e3349fb8d6a8e91f"
+
 
 const filter = {
   // Only request header if any event matches.
@@ -40,6 +41,9 @@ const filter = {
   ],
 };
 
+function escapeInvalidCharacters(str) {
+  return str.replace(/^[\x00-\x1F]+/, "");
+}
 
 function trimLeadingZeros(hexString) {
   // Check if the string starts with '0x'
@@ -127,6 +131,7 @@ function decodeTransfersInBlock({ header, events }) {
       const assertionId = event.data[0];
       const caller = event.data[1];
       const disputer = event.data[2];
+      const request_id = event.data[3];
       return {
         entity: {
           assertion_id: assertionId,
@@ -135,6 +140,7 @@ function decodeTransfersInBlock({ header, events }) {
           disputer_caller: caller,
           disputer: disputer,
           disputed: true,
+          dispute_id: request_id,
         },
       };
     } else if (event.keys[0] == AssertionSettledSelector){
@@ -165,7 +171,7 @@ function decodeTransfersInBlock({ header, events }) {
 // Configure indexer for streaming Starknet Goerli data starting at the specified block.
 export const config = {
   streamUrl: "https://sepolia.starknet.a5a.ch",
-  startingBlock:  Number(Deno.env.get("STARTING_BLOCK") || 86000),
+  startingBlock: Number(Deno.env.get("STARTING_BLOCK") || 86000),
   network: "starknet",
   filter,
   batchSize: 1,
@@ -182,3 +188,4 @@ export const config = {
 
 // Transform each block using the function defined in starknet.js.
 export default decodeTransfersInBlock;
+
