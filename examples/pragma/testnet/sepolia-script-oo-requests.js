@@ -8,7 +8,7 @@ const AssertionDisputedSelector = "0x033efc8167fe91406d16c1680e593c3c2cad8642206
 
 const AssertionSettledSelector = "0x00ed635610f8859765fb89b19bec7866c02bbc2f03bb048acec6ba6536aa7cb9";
 
-const ContractAddress = "0x04d559e9a6bedc3cea5cf87961e24a87340699ff793ad1c6e3349fb8d6a8e91f"
+const ContractAddress = "0x044ac84b04789b0a2afcdd2eb914f0f9b767a77a95a019ebaadc28d6cacbaeeb"
 
 
 const filter = {
@@ -171,7 +171,7 @@ function decodeTransfersInBlock({ header, events }) {
 // Configure indexer for streaming Starknet Goerli data starting at the specified block.
 export const config = {
   streamUrl: "https://sepolia.starknet.a5a.ch",
-  startingBlock: Number(Deno.env.get("STARTING_BLOCK") || 86000),
+  startingBlock: Number(Deno.env.get("STARTING_BLOCK") || 146000),
   network: "starknet",
   filter,
   batchSize: 1,
