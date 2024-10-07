@@ -64,10 +64,10 @@ function decodeTransfersInBlock({ header, events }) {
 export const config = {
   streamUrl: "https://devnet.pragma.a5a.ch",
   startingBlock: Number(0),
-  network: "pragma-devnet",
+  network: "starknet",
   finality: "DATA_STATUS_PENDING",
   filter,
-  sinkType: "postgres",
+  sinkType: "console",
   sinkOptions: {
     // Send data as returned by `transform`.
     // When `raw = false`, the data is sent together with the starting and end cursor.
