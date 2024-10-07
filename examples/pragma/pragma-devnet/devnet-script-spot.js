@@ -8,7 +8,7 @@ const filter = {
   events: [
     {
       fromAddress:
-        "0x39986b4fdb2b29e81bcfab5640c614797d75116bca67f0b7c4690c19a3392bc",
+        "0x753034396b7e59f3579e2beba2f408dd2ed12974e054a1348234bea4b10bd30",
       keys: [hash.getSelectorFromName("SubmittedSpotEntry")],
       includeTransaction: true,
       includeReceipt: false,
