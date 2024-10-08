@@ -65,7 +65,7 @@ function decodeTransfersInBlock({ header, events }) {
 export const config = {
   streamUrl: "https://devnet.pragma.a5a.ch",
   startingBlock: Number(0),
-  network: "pragma-devnet",
+  network: "starknet",
   filter,
   batchSize: 1,
   finality: "DATA_STATUS_PENDING",

@@ -65,9 +65,10 @@ export const config = {
   streamUrl: "https://devnet.pragma.a5a.ch",
   startingBlock: Number(0),
   network: "starknet",
-  finality: "DATA_STATUS_PENDING",
   filter,
-  sinkType: "console",
+  batchSize: 1,
+  finality: "DATA_STATUS_PENDING",
+  sinkType: "postgres",
   sinkOptions: {
     // Send data as returned by `transform`.
     // When `raw = false`, the data is sent together with the starting and end cursor.
