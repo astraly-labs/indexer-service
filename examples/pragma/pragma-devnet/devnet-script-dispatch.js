@@ -1,5 +1,8 @@
-import { hash, shortString } from "https://esm.run/starknet@5.14";
-import * as ethers from "https://esm.run/ethers";
+import { hash } from "https://esm.run/starknet@5.14";
+
+const HYPERLANE_MAILBOX_CONTRACT =
+  "0x41c20175af14a0bfebfc9ae2f3bda29230a0bceb551844197d9f46faf76d6da";
+const FEED_ID_SIZE = 64;
 
 const filter = {
   // Only request header if any event matches.
@@ -8,8 +11,7 @@ const filter = {
   },
   events: [
     {
-      fromAddress:
-        "0x41c20175af14a0bfebfc9ae2f3bda29230a0bceb551844197d9f46faf76d6da",
+      fromAddress: HYPERLANE_MAILBOX_CONTRACT,
       keys: [hash.getSelectorFromName("Dispatch")],
       includeTransaction: true,
       includeReceipt: false,
@@ -17,81 +19,65 @@ const filter = {
   ],
 };
 
-function escapeInvalidCharacters(str) {
-  return str.replace(/^[\x00-\x1F]+/, "");
+function decodeFeedId(feedIdHex) {
+  const feedId = BigInt(`0x${feedIdHex}`);
+  const assetClass = Number((feedId >> BigInt(232)) & BigInt(0xffff));
+  const feedType = Number((feedId >> BigInt(216)) & BigInt(0xffff));
+  const pairId = feedId & BigInt((1n << 216n) - 1n);
+
+  return { assetClass, feedType, pairId };
 }
 
+function getFeedSize(feedType) {
+  const mainType = feedType >> 8;
+  switch (mainType) {
+    case 0: // Unique
+      return 214; // 856 bits / 4 = 214 hex characters
+    case 1: // Twap
+      return 470; // 1880 bits / 4 = 470 hex characters
+    default:
+      throw new Error(`Unknown feed type: ${feedType}`);
+  }
+}
 
-// number of udpate u16 (4 char)
-// Unique()
-// feedID u256
-// ts u64
-// num source u16
-// decimal u8 
-// price u256
-// volume u256 
-// 256 + 64 + 16 + 8 + 256 + 256 = 856 / 4 = 214
-function decodeHyperlaneMessageBody(hexData) {
-  const uniqueSize = 214;
-  let data = hexData.map(hex => {
-      // Remove '0x' prefix
-      let trimmed = hex.replace(/^0x/, '');
-      
-      // Remove the first 32 characters
-      trimmed = trimmed.slice(32);
-      
-      // If the string became empty after processing, return an empty string
-      return trimmed === '' ? '' : trimmed;
+function decodeFeedsUpdatedFromHyperlaneMessage(hexData) {
+  let data = hexData.map((hex) => {
+    let trimmed = hex.replace(/^0x/, "");
+    trimmed = trimmed.slice(32);
+    return trimmed === "" ? "" : trimmed;
   });
-  data = data.join('');
-  let numberOfUpdate = Number(data.slice(0,4));
+  data = data.join("");
+
+  const numberOfUpdates = Number(data.slice(0, 4));
   data = data.slice(4);
-  // parse unique
-  let feedId = data.slice(0,64);
-  let timestamp = data.slice(64, 80);
-  let num_source = data.slice(80,84);
-  let decimal = data.slice(84,86);
-  let price = data.slice(86,86+64);
-  let feedTypeId = Number(data.slice(4,5));
-  let sizeData = uniqueSize; //TODO conditioné par type de donné
 
-  let res = {
-    feedId: feedId,
-    feedTypeId: feedTypeId,
-    sizeData : sizeData,
-    timestamp: timestamp,
-    num_source,
-    decimal,
-    price,
-  };
-  // concat data 
-
-  console.log(res);
+  const feedIdsUpdated = [];
+  for (let i = 0; i < numberOfUpdates; i++) {
+    const feedIdHex = data.slice(0, FEED_ID_SIZE);
+    const { feedType } = decodeFeedId(feedIdHex);
+    feedIdsUpdated.push(`0x${feedIdHex}`);
+    data = data.slice(getFeedSize(feedType));
+  }
+  return feedIdsUpdated;
 }
 
-function decodeTransfersInBlock({ header, events }) {
+export function decodeTransfersInBlock({ header, events }) {
   const { blockNumber, blockHash, timestamp } = header;
-  
+
   return events.flatMap(({ event, transaction }) => {
     const transactionHash = transaction.meta.hash;
-    
-    console.log(event.data);
-
     const nonce = event.data[6];
-
-    // retrieve body 
-    // decode body
-    // recuperer tout les feedId a l'interieur
     let messageBody = event.data.slice(15);
-    let decoded = decodeHyperlaneMessageBody(messageBody);
-    console.log(decoded);
-    // Convert to snake_case because it works better with postgres.
+    let feedsUpdated = decodeFeedsUpdatedFromHyperlaneMessage(messageBody);
+
     return {
       network: "pragma-devnet",
       block_hash: blockHash,
       block_number: +blockNumber,
       block_timestamp: timestamp,
       transaction_hash: transactionHash,
+      nonce: nonce,
+      feeds_updated: feedsUpdated,
     };
   });
 }
