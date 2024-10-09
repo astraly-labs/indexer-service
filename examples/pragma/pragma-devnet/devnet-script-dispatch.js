@@ -28,15 +28,20 @@ function decodeFeedId(feedIdHex) {
   return { assetClass, feedType, pairId };
 }
 
-function getFeedSize(feedType) {
+function getFeedSize(assetClass, feedType) {
   const mainType = feedType >> 8;
-  switch (mainType) {
-    case 0: // Unique
-      return 214; // 856 bits / 4 = 214 hex characters
-    case 1: // Twap
-      return 470; // 1880 bits / 4 = 470 hex characters
+  switch (assetClass) {
+    case 0: // Crypto
+      switch (mainType) {
+        case 0: // Unique
+          return 214; // 856 bits / 4 = 214 hex characters
+        case 1: // Twap
+          return 470; // 1880 bits / 4 = 470 hex characters
+        default:
+          throw new Error(`Unknown feed type: ${feedType}`);
+      }
     default:
-      throw new Error(`Unknown feed type: ${feedType}`);
+      throw new Error(`Unknown asset class: ${feedType}`);
   }
 }
 
@@ -54,9 +59,9 @@ function decodeFeedsUpdatedFromHyperlaneMessage(hexData) {
   const feedIdsUpdated = [];
   for (let i = 0; i < numberOfUpdates; i++) {
     const feedIdHex = data.slice(0, FEED_ID_SIZE);
-    const { feedType } = decodeFeedId(feedIdHex);
+    const { assetClass, feedType } = decodeFeedId(feedIdHex);
     feedIdsUpdated.push(`0x${feedIdHex}`);
-    data = data.slice(getFeedSize(feedType));
+    data = data.slice(getFeedSize(assetClass, feedType));
   }
   return feedIdsUpdated;
 }
@@ -91,7 +96,7 @@ export const config = {
   filter,
   batchSize: 1,
   finality: "DATA_STATUS_PENDING",
-  sinkType: "postgres",
+  sinkType: "console",
   sinkOptions: {
     // Send data as returned by `transform`.
     // When `raw = false`, the data is sent together with the starting and end cursor.
