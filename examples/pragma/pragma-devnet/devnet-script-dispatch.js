@@ -85,7 +85,8 @@ export function decodeTransfersInBlock({ header, events }) {
 // Configure indexer for streaming PragmaGix data starting at the specified block.
 export const config = {
   streamUrl: "https://devnet.pragma.a5a.ch",
-  startingBlock: Number(0),
+  // We don't have any Dispatch before the 180_000'th block
+  startingBlock: Number(180_000),
   network: "starknet",
   filter,
   batchSize: 1,
