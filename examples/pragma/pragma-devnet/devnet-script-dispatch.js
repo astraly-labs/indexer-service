@@ -1,7 +1,7 @@
 import { hash } from "https://esm.run/starknet@5.14";
 
 const HYPERLANE_MAILBOX_CONTRACT =
-  "0x41c20175af14a0bfebfc9ae2f3bda29230a0bceb551844197d9f46faf76d6da";
+  "0x6a2f7a45b29fc7c9854a6fe5228bdff5311884c804cb6b46553ba4cde235f1e";
 const FEED_ID_SIZE = 64;
 
 const filter = {
