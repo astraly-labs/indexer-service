@@ -85,12 +85,12 @@ export function decodeTransfersInBlock({ header, events }) {
 // Configure indexer for streaming PragmaGix data starting at the specified block.
 export const config = {
   streamUrl: "https://devnet.pragma.a5a.ch",
-  startingBlock: Number(220_840),
+  startingBlock: Number(0),
   network: "starknet",
   filter,
   batchSize: 1,
   finality: "DATA_STATUS_PENDING",
-  sinkType: "console",
+  sinkType: "postgres",
   sinkOptions: {
     // Send data as returned by `transform`.
     // When `raw = false`, the data is sent together with the starting and end cursor.

@@ -60,7 +60,7 @@ function decodeTransfersInBlock({ header, events }) {
   });
 }
 
-// Configure indexer for streaming Starknet Goerli data starting at the specified block.
+// Configure indexer for streaming PragmaGix data starting at the specified block.
 export const config = {
   streamUrl: "https://devnet.pragma.a5a.ch",
   startingBlock: Number(0),
