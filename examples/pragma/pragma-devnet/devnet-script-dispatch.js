@@ -91,7 +91,7 @@ export function decodeTransfersInBlock({ header, events }) {
 export const config = {
   streamUrl: "https://devnet.pragma.a5a.ch",
   // We don't have any Dispatch before the 180_000'th block
-  startingBlock: Number(180_000),
+  startingBlock: Number(0),
   network: "starknet",
   filter,
   batchSize: 1,
