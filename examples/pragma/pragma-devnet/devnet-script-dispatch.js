@@ -72,8 +72,8 @@ export function decodeTransfersInBlock({ header, events }) {
   return events.flatMap(({ event, transaction }) => {
     const transactionHash = transaction.meta.hash;
     const hyperlaneMessageNonce = event.data[6];
-    let messageBody = event.data.slice(15);
-    let feedsUpdated = decodeFeedsUpdatedFromHyperlaneMessage(messageBody);
+    const messageBody = event.data.slice(15);
+    const feedsUpdated = decodeFeedsUpdatedFromHyperlaneMessage(messageBody);
 
     return {
       network: "pragma-devnet",
