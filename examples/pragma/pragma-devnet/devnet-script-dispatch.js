@@ -71,7 +71,7 @@ export function decodeTransfersInBlock({ header, events }) {
 
   return events.flatMap(({ event, transaction }) => {
     const transactionHash = transaction.meta.hash;
-    const hyperlaneMessageNonce = event.data[6];
+    const hyperlaneMessageNonce = parseInt(event.data[6], 16);
     const messageBody = event.data.slice(15);
     const feedsUpdated = decodeFeedsUpdatedFromHyperlaneMessage(messageBody);
 
