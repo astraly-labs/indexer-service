@@ -96,7 +96,7 @@ export const config = {
   filter,
   batchSize: 1,
   finality: "DATA_STATUS_PENDING",
-  sinkType: "console",
+  sinkType: "postgres",
   sinkOptions: {
     // Send data as returned by `transform`.
     // When `raw = false`, the data is sent together with the starting and end cursor.
