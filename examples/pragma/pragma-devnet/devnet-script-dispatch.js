@@ -41,7 +41,7 @@ function getFeedSize(assetClass, feedType) {
           throw new Error(`Unknown feed type: ${feedType}`);
       }
     default:
-      throw new Error(`Unknown asset class: ${feedType}`);
+      throw new Error(`Unknown asset class: ${assetClass}`);
   }
 }
 
