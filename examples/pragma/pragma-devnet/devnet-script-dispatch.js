@@ -1,7 +1,7 @@
 import { hash } from "https://esm.run/starknet@5.14";
 
 const HYPERLANE_MAILBOX_CONTRACT =
-  "0x6a2f7a45b29fc7c9854a6fe5228bdff5311884c804cb6b46553ba4cde235f1e";
+  "0x5bfb1a565a1fa2eb33c5d8e587a7aeb5e6846d3aadf9fecb529ace1e3457096";
 const FEED_ID_SIZE = 64;
 
 const filter = {
@@ -90,7 +90,6 @@ export function decodeTransfersInBlock({ header, events }) {
 // Configure indexer for streaming PragmaGix data starting at the specified block.
 export const config = {
   streamUrl: "https://devnet.pragma.a5a.ch",
-  // We don't have any Dispatch before the 180_000'th block
   startingBlock: Number(0),
   network: "starknet",
   filter,
