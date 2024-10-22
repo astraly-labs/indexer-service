@@ -52,10 +52,9 @@ function decodeFeedsUpdatedFromHyperlaneMessage(hexData) {
     return trimmed === "" ? "" : trimmed;
   });
   data = data.join("");
-  console.log(data);
 
-  const numberOfUpdates = Number(data.slice(0, 4));
-  data = data.slice(4);
+  const numberOfUpdates = Number(data.slice(0, 2));
+  data = data.slice(2);
 
   const feedIdsUpdated = [];
   for (let i = 0; i < numberOfUpdates; i++) {
@@ -74,7 +73,6 @@ export function decodeTransfersInBlock({ header, events }) {
     const transactionHash = transaction.meta.hash;
     const hyperlaneMessageNonce = parseInt(event.data[6], 16);
     const messageBody = event.data.slice(15);
-    console.log(messageBody);
     const feedsUpdated = decodeFeedsUpdatedFromHyperlaneMessage(messageBody);
 
     return {
