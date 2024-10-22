@@ -1,7 +1,7 @@
 import { hash } from "https://esm.run/starknet@5.14";
 
 const HYPERLANE_MAILBOX_CONTRACT =
-  "0x5bfb1a565a1fa2eb33c5d8e587a7aeb5e6846d3aadf9fecb529ace1e3457096";
+  "0x064bb5e29a7e9fc67dedabb6d1c385050feef028563078daa9025dd8b218e596";
 const FEED_ID_SIZE = 64;
 
 const filter = {
@@ -52,6 +52,7 @@ function decodeFeedsUpdatedFromHyperlaneMessage(hexData) {
     return trimmed === "" ? "" : trimmed;
   });
   data = data.join("");
+  console.log(data);
 
   const numberOfUpdates = Number(data.slice(0, 4));
   data = data.slice(4);
@@ -73,6 +74,7 @@ export function decodeTransfersInBlock({ header, events }) {
     const transactionHash = transaction.meta.hash;
     const hyperlaneMessageNonce = parseInt(event.data[6], 16);
     const messageBody = event.data.slice(15);
+    console.log(messageBody);
     const feedsUpdated = decodeFeedsUpdatedFromHyperlaneMessage(messageBody);
 
     return {
