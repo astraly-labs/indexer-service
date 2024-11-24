@@ -30,6 +30,7 @@ impl MockRepository {
                     target_url: Some("https://example.com".to_string()),
                     table_name: None,
                     status_server_port: None,
+                    custom_connection_string: None,
                 },
                 IndexerModel {
                     id: uuid::Uuid::new_v4(),
@@ -39,6 +40,7 @@ impl MockRepository {
                     target_url: Some("https://example.com".to_string()),
                     table_name: None,
                     status_server_port: None,
+                    custom_connection_string: None,
                 },
                 IndexerModel {
                     id: uuid::Uuid::new_v4(),
@@ -48,6 +50,7 @@ impl MockRepository {
                     target_url: Some("https://example.com".to_string()),
                     table_name: None,
                     status_server_port: None,
+                    custom_connection_string: None,
                 },
                 IndexerModel {
                     id: uuid::Uuid::new_v4(),
@@ -57,6 +60,7 @@ impl MockRepository {
                     target_url: Some("https://example.com".to_string()),
                     table_name: None,
                     status_server_port: None,
+                    custom_connection_string: None,
                 },
                 IndexerModel {
                     id: uuid::Uuid::new_v4(),
@@ -66,6 +70,7 @@ impl MockRepository {
                     target_url: Some("https://example.com".to_string()),
                     table_name: None,
                     status_server_port: None,
+                    custom_connection_string: None,
                 },
             ],
         }

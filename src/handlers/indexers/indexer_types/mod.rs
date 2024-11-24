@@ -212,6 +212,7 @@ mod tests {
             target_url: Some("https://example.com".to_string()),
             table_name: None,
             status_server_port: Some(1234),
+            custom_connection_string: None,
         };
 
         // clear the sqs queue

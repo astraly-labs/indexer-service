@@ -7,6 +7,7 @@ use axum::Json;
 use diesel::SelectableHelper;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
+use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::config::config;
@@ -19,13 +20,29 @@ use crate::publishers::indexers::publish_start_indexer;
 use crate::utils::env::get_environment_variable;
 use crate::AppState;
 
-#[derive(Default)]
-struct CreateIndexerRequest {
-    target_url: Option<String>,
-    data: Bytes,
-    table_name: Option<String>,
-    indexer_type: IndexerType,
-    status_server_port: i32,
+#[derive(Debug, Deserialize)]
+pub struct CreateIndexerRequest {
+    pub indexer_type: IndexerType,
+    pub target_url: Option<String>,
+    pub table_name: Option<String>,
+    pub custom_connection_string: Option<String>,
+    #[serde(skip)]
+    pub data: Bytes,
+    #[serde(skip)]
+    pub status_server_port: i32,
+}
+
+impl Default for CreateIndexerRequest {
+    fn default() -> Self {
+        Self {
+            indexer_type: IndexerType::default(),
+            target_url: None,
+            table_name: None,
+            custom_connection_string: None,
+            data: Bytes::new(),
+            status_server_port: 1234,
+        }
+    }
 }
 
 impl CreateIndexerRequest {
@@ -103,12 +120,13 @@ pub async fn create_indexer(
     let id = Uuid::new_v4();
     let create_indexer_request = build_create_indexer_request(&mut request).await?;
     let new_indexer_db = indexer_repository::NewIndexerDb {
+        id,
         status: IndexerStatus::Created.to_string(),
         type_: create_indexer_request.indexer_type.to_string(),
-        id,
-        target_url: create_indexer_request.target_url,
-        table_name: create_indexer_request.table_name,
-        status_server_port: Some(create_indexer_request.status_server_port),
+        target_url: create_indexer_request.target_url.clone(),
+        table_name: create_indexer_request.table_name.clone(),
+        status_server_port: None,
+        custom_connection_string: create_indexer_request.custom_connection_string.clone(),
     };
 
     let config = config().await;

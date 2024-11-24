@@ -23,6 +23,7 @@ async fn test_get_indexer() {
             target_url: Some("https://example.com".to_string()), // TODO: Mock webhook and test its behavior
             table_name: None,
             status_server_port: None,
+            custom_connection_string: None,
         })
         .await
         .unwrap();
@@ -54,6 +55,7 @@ async fn test_insert_indexer() {
             target_url: Some("https://example.com".to_string()),
             table_name: None,
             status_server_port: None,
+            custom_connection_string: None,
         })
         .await
         .unwrap();
@@ -82,6 +84,7 @@ async fn test_update_status() {
             target_url: Some("https://example.com".to_string()),
             table_name: None,
             status_server_port: None,
+            custom_connection_string: None,
         })
         .await
         .unwrap();
@@ -109,6 +112,7 @@ async fn test_update_status_and_process_id() {
             target_url: Some("https://example.com".to_string()),
             table_name: None,
             status_server_port: None,
+            custom_connection_string: None,
         })
         .await
         .unwrap();
@@ -144,6 +148,7 @@ async fn test_get_all_indexers() {
                 target_url: Some("https://example.com".to_string()),
                 table_name: None,
                 status_server_port: None,
+                custom_connection_string: None,
             })
             .await
             .unwrap();
@@ -158,6 +163,7 @@ async fn test_get_all_indexers() {
             target_url: Some("https://example.com".to_string()),
             table_name: None,
             status_server_port: None,
+            custom_connection_string: None,
         })
         .await
         .unwrap();
