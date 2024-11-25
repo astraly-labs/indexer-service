@@ -10,6 +10,7 @@ diesel::table! {
         target_url -> Nullable<Varchar>,
         table_name -> Nullable<Varchar>,
         status_server_port -> Nullable<Int4>,
+        custom_connection_string -> Nullable<Varchar>,
     }
 }
 
