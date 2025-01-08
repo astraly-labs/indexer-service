@@ -1,0 +1,20 @@
+timeout: 2700s
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: docker-build
+    args: [ 'build',
+            '--tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:${SHORT_SHA}',
+            '--file=Dockerfile',
+            '.' ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: docker-push
+    args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:${SHORT_SHA}']
+
+images:
+  - '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:${SHORT_SHA}'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  worker_pool: ${_WORKER_POOL}
