@@ -37,11 +37,11 @@ RUN --mount=type=bind,source=src,target=src \
     --mount=type=bind,source=migrations,target=migrations \
     --mount=type=cache,target=/app/target/ \
     --mount=type=cache,target=/usr/local/cargo/registry/ \
-    <<EOF
-set -e
-ls -la
-cargo build --locked --release
-cp ./target/release/$APP_NAME /bin/server
+    <<-EOF
+    set -e
+    ls -la
+    cargo build --locked --release
+    cp ./target/release/$APP_NAME /bin/server
 EOF
 
 # Download sink-webhook from the Github release
