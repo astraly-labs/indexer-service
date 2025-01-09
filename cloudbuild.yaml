@@ -1,8 +1,11 @@
 timeout: 2700s
 
 steps:
+
   - name: 'gcr.io/cloud-builders/docker'
     id: docker-build
+    env:
+      - 'DOCKER_BUILDKIT=1'
     args: [ 'build',
             '--tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:${SHORT_SHA}',
             '--file=Dockerfile',
