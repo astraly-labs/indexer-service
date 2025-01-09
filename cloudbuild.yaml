@@ -17,4 +17,3 @@ images:
 
 options:
   logging: CLOUD_LOGGING_ONLY
-  worker_pool: ${_WORKER_POOL}
