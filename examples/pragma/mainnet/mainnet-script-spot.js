@@ -60,10 +60,10 @@ function decodeTransfersInBlock({ header, events }) {
   });
 }
 
-// Configure indexer for streaming Starknet Goerli data starting at the specified block.
+// Configure indexer for streaming Starknet Mainnet data starting at the specified block.
 export const config = {
   streamUrl: "https://pragma-mainnet.starknet.a5a.ch",
-  startingBlock: Number(Deno.env.get("STARTING_BLOCK") || 416_000),
+  startingBlock: Number(Deno.env.get("STARTING_BLOCK") || 1052663),
   network: "starknet",
   finality: "DATA_STATUS_PENDING",
   filter,
