@@ -1,0 +1,5 @@
+apiVersion: v2
+name: pragma-indexer
+description: A Helm chart for Pragma Indexer Service
+version: 0.1.0
+appVersion: "1.0.0"

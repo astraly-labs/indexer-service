@@ -1,0 +1,78 @@
+replicaCount: 1
+
+image:
+  repository: ${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/pragma-indexer
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 10001
+
+service:
+  type: ClusterIP
+  port: 8080
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+nodeSelector:
+  Nodelabel: "node-devnet"
+
+tolerations:
+  - key: "devnet"
+    operator: "Equal"
+    value: "reserved"
+    effect: "NoSchedule"
+
+affinity: {}
+
+ingress:
+  enabled: true
+  className: nginx
+  host: indexer.devnet.pragma.build
+
+# Secrets will be managed by Infisical
+secrets:
+  - name: pragma-indexer-service
+    envs:
+      - .env
+    backend: infisical
+    data:
+      APIBARA_AUTH_TOKEN: ""
+      AWS_ACCESS_KEY_ID: ""
+      AWS_REGION: ""
+      AWS_SECRET_ACCESS_KEY: ""
+      DATABASE_URL: ""
+      HOST: "0.0.0.0"
+      PORT: "8080"
+      LOCALSTACK_ENDPOINT: "http://localhost:4566"
+      BINARY_BASE_PATH: "/tmp"
+      APIBARA_POSTGRES_CONNECTION_STRING: ""
+      APIBARA_ETCD_URL: "http://localhost:2379"
+      INDEXER_SERVICE_BUCKET: ""
+      DEV_ENV: "true"
