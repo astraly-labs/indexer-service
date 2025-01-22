@@ -19,6 +19,8 @@ use crate::handlers::indexers::utils::get_script_tmp_directory;
 use crate::publishers::indexers::{publish_failed_indexer, publish_start_indexer, publish_stop_indexer};
 use crate::utils::env::get_environment_variable;
 
+pub const DEFAULT_STARTING_BLOCK: i64 = 1;
+
 #[async_trait]
 pub trait Indexer {
     async fn start(&self, indexer: &IndexerModel, attempt: u32) -> Result<u32, IndexerError>;
@@ -59,6 +61,7 @@ pub trait Indexer {
             // Silence  stdout and stderr
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .env("STARTING_BLOCK", indexer.starting_block.unwrap_or(DEFAULT_STARTING_BLOCK).to_string())
             .args(args)
             .spawn()
             .map_err(|_| IndexerError::FailedToStartIndexer(indexer_id.clone()))?;
@@ -210,6 +213,7 @@ mod tests {
             process_id: None,
             status: IndexerStatus::Created,
             target_url: Some("https://example.com".to_string()),
+            starting_block: None,
             table_name: None,
             status_server_port: Some(1234),
             custom_connection_string: None,

@@ -26,6 +26,7 @@ pub struct CreateIndexerRequest {
     pub target_url: Option<String>,
     pub table_name: Option<String>,
     pub custom_connection_string: Option<String>,
+    pub starting_block: Option<i64>,
     #[serde(skip)]
     pub data: Bytes,
     #[serde(skip)]
@@ -39,6 +40,7 @@ impl Default for CreateIndexerRequest {
             target_url: None,
             table_name: None,
             custom_connection_string: None,
+            starting_block: None,
             data: Bytes::new(),
             status_server_port: 1234,
         }
@@ -100,6 +102,12 @@ async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateI
                 create_indexer_request.indexer_type =
                     IndexerType::from_str(field.as_str()).map_err(|_| IndexerError::InvalidIndexerType(field))?
             }
+            "starting_block" => {
+                let field = field.text().await.map_err(IndexerError::FailedToReadMultipartField)?;
+                create_indexer_request.starting_block = Some(
+                    field.parse().map_err(|_| IndexerError::InternalServerError("Invalid starting block".into()))?,
+                );
+            }
             _ => return Err(IndexerError::UnexpectedMultipartField(field_name.to_string())),
         };
     }
@@ -127,6 +135,7 @@ pub async fn create_indexer(
         table_name: create_indexer_request.table_name.clone(),
         status_server_port: None,
         custom_connection_string: create_indexer_request.custom_connection_string.clone(),
+        starting_block: create_indexer_request.starting_block,
     };
 
     let config = config().await;
