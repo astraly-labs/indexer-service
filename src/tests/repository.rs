@@ -25,6 +25,7 @@ async fn test_get_indexer() {
             status_server_port: None,
             custom_connection_string: None,
             starting_block: None,
+            indexer_id: None,
         })
         .await
         .unwrap();
@@ -58,6 +59,7 @@ async fn test_insert_indexer() {
             status_server_port: None,
             custom_connection_string: None,
             starting_block: None,
+            indexer_id: None,
         })
         .await
         .unwrap();
@@ -88,6 +90,7 @@ async fn test_update_status() {
             status_server_port: None,
             custom_connection_string: None,
             starting_block: None,
+            indexer_id: None,
         })
         .await
         .unwrap();
@@ -117,6 +120,7 @@ async fn test_update_status_and_process_id() {
             status_server_port: None,
             custom_connection_string: None,
             starting_block: None,
+            indexer_id: None,
         })
         .await
         .unwrap();
@@ -154,6 +158,7 @@ async fn test_get_all_indexers() {
                 status_server_port: None,
                 custom_connection_string: None,
                 starting_block: None,
+                indexer_id: None,
             })
             .await
             .unwrap();
@@ -170,6 +175,7 @@ async fn test_get_all_indexers() {
             status_server_port: None,
             custom_connection_string: None,
             starting_block: None,
+            indexer_id: None,
         })
         .await
         .unwrap();

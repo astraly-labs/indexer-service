@@ -12,5 +12,6 @@ diesel::table! {
         status_server_port -> Nullable<Int4>,
         custom_connection_string -> Nullable<Varchar>,
         starting_block -> Nullable<Int8>,
+        indexer_id -> Nullable<Varchar>,
     }
 }
