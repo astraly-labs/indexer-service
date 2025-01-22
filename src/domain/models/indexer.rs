@@ -7,7 +7,6 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use sqs_worker::SQSListenerClientBuilderError;
 use strum_macros::{Display, EnumString};
 use uuid::Uuid;
 
@@ -82,8 +81,6 @@ pub enum IndexerError {
     FailedToBuildCreateIndexerRequest,
     #[error("failed to create file : {0}")]
     FailedToCreateFile(std::io::Error),
-    #[error("failed to push to queue")]
-    FailedToPushToQueue(aws_sdk_sqs::Error),
     #[error("failed to stop indexer : {0}")]
     FailedToStopIndexer(i64),
     #[error("failed to start indexer : {0}")]
@@ -94,8 +91,6 @@ pub enum IndexerError {
     FailedToGetFromS3(SdkError<GetObjectError>),
     #[error("failed to collect bytes from S3")]
     FailedToCollectBytesFromS3(ByteStreamError),
-    #[error("failed to create SQS listener")]
-    FailedToCreateSQSListener(SQSListenerClientBuilderError),
     #[error("invalid indexer status")]
     InvalidIndexerStatus(IndexerStatus),
     #[error("failed to query db")]

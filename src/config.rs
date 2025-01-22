@@ -3,7 +3,6 @@ use std::sync::Arc;
 
 use arc_swap::{ArcSwap, Guard};
 use aws_sdk_s3::Client as S3Client;
-use aws_sdk_sqs::Client as SqsClient;
 #[cfg(test)]
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use diesel::{ConnectionError, ConnectionResult};
@@ -39,7 +38,6 @@ struct DatabaseConfig {
 
 pub struct Config {
     server: ServerConfig,
-    sqs_client: SqsClient,
     s3_client: S3Client,
     pool: Arc<Pool<AsyncPgConnection>>,
     db_config: DatabaseConfig,
@@ -53,10 +51,6 @@ impl Config {
 
     pub fn server_port(&self) -> u16 {
         self.server.port
-    }
-
-    pub fn sqs_client(&self) -> &SqsClient {
-        &self.sqs_client
     }
 
     pub fn s3_client(&self) -> &S3Client {
@@ -108,28 +102,13 @@ async fn init_config() -> Config {
         // init AWS config
         let shared_config = aws_config::from_env().load().await;
 
-        // init AWS SQS
-        let sqs_client = SqsClient::new(&shared_config);
-
         // init AWS S3 client
         let s3_client = S3Client::new(&shared_config);
 
-        Config {
-            server: server_config,
-            sqs_client,
-            s3_client,
-            pool: Arc::new(pool),
-            db_config: database_config,
-            is_dev,
-        }
+        Config { server: server_config, s3_client, pool: Arc::new(pool), db_config: database_config, is_dev }
     } else {
         let localstack_endpoint = env::var("LOCALSTACK_ENDPOINT").expect("LOCALSTACK_ENDPOINT must be set");
         let shared_config = aws_config::from_env().load().await;
-
-        // init AWS SQS
-        let sqs_config =
-            aws_sdk_sqs::config::Builder::from(&shared_config).endpoint_url(localstack_endpoint.clone()).build();
-        let sqs_client = SqsClient::from_conf(sqs_config);
 
         // init AWS S3 client
         let s3_config = aws_sdk_s3::config::Builder::from(&shared_config)
@@ -138,14 +117,7 @@ async fn init_config() -> Config {
             .build();
         let s3_client = S3Client::from_conf(s3_config);
 
-        Config {
-            server: server_config,
-            sqs_client,
-            s3_client,
-            pool: Arc::new(pool),
-            db_config: database_config,
-            is_dev,
-        }
+        Config { server: server_config, s3_client, pool: Arc::new(pool), db_config: database_config, is_dev }
     }
 }
 
@@ -192,11 +164,6 @@ pub async fn init_config() -> Config {
 
     let localstack_endpoint = get_environment_variable("LOCALSTACK_ENDPOINT");
 
-    // init AWS SQS
-    let sqs_config =
-        aws_sdk_sqs::config::Builder::from(&shared_config).endpoint_url(localstack_endpoint.clone()).build();
-    let sqs_client = SqsClient::from_conf(sqs_config);
-
     // init AWS S3 client
     let s3_config = aws_sdk_s3::config::Builder::from(&shared_config)
         .endpoint_url(localstack_endpoint)
@@ -204,14 +171,7 @@ pub async fn init_config() -> Config {
         .build();
     let s3_client = S3Client::from_conf(s3_config);
 
-    Config {
-        server: server_config,
-        sqs_client,
-        s3_client,
-        pool: Arc::new(pool),
-        db_config: database_config,
-        is_dev: true,
-    }
+    Config { server: server_config, s3_client, pool: Arc::new(pool), db_config: database_config, is_dev: true }
 }
 
 pub async fn config() -> Guard<Arc<Config>> {

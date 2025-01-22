@@ -11,8 +11,8 @@ use crate::domain::models::types::AxumErrorResponse;
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::tests::common::constants::{TABLE_NAME, WORKING_APIBARA_SCRIPT};
 use crate::tests::common::utils::{
-    assert_queue_contains_message_with_indexer_id, assert_s3_contains_key, get_indexer, get_indexer_by_table_name,
-    send_create_indexer_request, send_create_postgres_indexer_request,
+    assert_s3_contains_key, get_indexer, get_indexer_by_table_name, send_create_indexer_request,
+    send_create_postgres_indexer_request,
 };
 use crate::tests::server::common::setup_server;
 use crate::types::sqs::StartIndexerRequest;
@@ -25,9 +25,6 @@ async fn create_postgres_indexer(#[future] setup_server: SocketAddr) {
 
     let client = hyper::Client::new();
     let config = config().await;
-
-    // clear the sqs queue
-    config.sqs_client().purge_queue().queue_url(START_INDEXER_QUEUE).send().await.unwrap();
 
     // Create indexer
     let response = send_create_postgres_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
@@ -43,10 +40,6 @@ async fn create_postgres_indexer(#[future] setup_server: SocketAddr) {
     // check if the file exists on S3
     let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
     assert_s3_contains_key(&bucket_name, get_s3_script_key(body.id).as_str()).await;
-
-    // check if the message is present on the queue
-    let request = StartIndexerRequest { id: body.id, attempt_no: 1 };
-    assert_queue_contains_message_with_indexer_id(START_INDEXER_QUEUE, serde_json::to_string(&request).unwrap()).await;
 
     // check indexer is present in DB in created state
     let indexer = get_indexer(body.id).await;

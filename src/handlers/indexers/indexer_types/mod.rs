@@ -15,7 +15,6 @@ use crate::constants::indexers::{
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
-use crate::publishers::indexers::{publish_failed_indexer, publish_start_indexer, publish_stop_indexer};
 use crate::utils::env::get_environment_variable;
 
 pub const DEFAULT_STARTING_BLOCK: i64 = 1;
@@ -95,7 +94,7 @@ pub trait Indexer {
                         match result.unwrap().success() {
                             true => {
                                 tracing::info!("Child process exited successfully {}", indexer_id);
-                                publish_stop_indexer(indexer_id, IndexerStatus::Stopped).await.unwrap();
+                                // publish_stop_indexer(indexer_id, IndexerStatus::Stopped).await.unwrap();
                             },
                             false => {
                                 tracing::error!("Child process exited with an error {}", indexer_id);
@@ -106,9 +105,9 @@ pub trait Indexer {
                                     // with attempt id 1. we don't want to increment the attempt id as this was
                                     // a successful run and a we want MAX_INDEXER_START_RETRIES to restart the indexer
                                     tracing::error!("Indexer {} ran for more than 5 minutes, trying restart", indexer_id);
-                                    publish_start_indexer(indexer_id, 1, 0).await.unwrap();
+                                    // publish_start_indexer(indexer_id, 1, 0).await.unwrap();
                                 } else if attempt >= MAX_INDEXER_START_RETRIES {
-                                    publish_failed_indexer(indexer_id).await.unwrap();
+                                    // publish_failed_indexer(indexer_id).await.unwrap();
                                 } else {
                                     // if the indexer ran for less than threshold time, we will try to restart it
                                     // by incrementing the attempt id. we increment the attempt id as this was
@@ -116,7 +115,7 @@ pub trait Indexer {
                                     // we also add a delay before starting the indexer as it's possible there are other
                                     // instances of the service running which have acquired the lock, they need to shut down
                                     // before this service can get the lock.
-                                    publish_start_indexer(indexer_id, attempt+1, START_INDEXER_DELAY_SECONDS).await.unwrap();
+                                    // publish_start_indexer(indexer_id, attempt+1, START_INDEXER_DELAY_SECONDS).await.unwrap();
                                 }
 
                             }
@@ -199,7 +198,6 @@ mod tests {
     use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE};
     use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
     use crate::handlers::indexers::indexer_types::get_indexer_handler;
-    use crate::tests::common::utils::assert_queue_contains_message_with_indexer_id;
     use crate::types::sqs::StartIndexerRequest;
 
     #[tokio::test]
@@ -219,10 +217,6 @@ mod tests {
             indexer_id: None,
         };
 
-        // clear the sqs queue
-        config.sqs_client().purge_queue().queue_url(START_INDEXER_QUEUE).send().await.unwrap();
-        config.sqs_client().purge_queue().queue_url(FAILED_INDEXER_QUEUE).send().await.unwrap();
-
         let handler = get_indexer_handler(&indexer.indexer_type);
 
         let mut attempt = 1;
@@ -235,16 +229,16 @@ mod tests {
             tokio::time::sleep(Duration::from_secs(1)).await;
 
             // check if the message is present on the queue
-            if attempt < MAX_INDEXER_START_RETRIES {
-                let request = StartIndexerRequest { id: indexer.id, attempt_no: attempt + 1 };
-                assert_queue_contains_message_with_indexer_id(
-                    START_INDEXER_QUEUE,
-                    serde_json::to_string(&request).unwrap(),
-                )
-                .await;
-            } else {
-                assert_queue_contains_message_with_indexer_id(FAILED_INDEXER_QUEUE, indexer.id.to_string()).await;
-            }
+            // if attempt < MAX_INDEXER_START_RETRIES {
+            //     let request = StartIndexerRequest { id: indexer.id, attempt_no: attempt + 1 };
+            //     assert_queue_contains_message_with_indexer_id(
+            //         START_INDEXER_QUEUE,
+            //         serde_json::to_string(&request).unwrap(),
+            //     )
+            //     .await;
+            // } else {
+            //     assert_queue_contains_message_with_indexer_id(FAILED_INDEXER_QUEUE,
+            // indexer.id.to_string()).await; }
 
             attempt += 1;
         }

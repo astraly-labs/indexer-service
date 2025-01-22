@@ -24,7 +24,7 @@ services:
       - "4566:4566" # LocalStack endpoint
       - "4510-4559:4510-4559" # external services port range
     environment:
-      - SERVICES=sqs,s3
+      - SERVICES=s3
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOSTNAME_EXTERNAL=localstack
     volumes:

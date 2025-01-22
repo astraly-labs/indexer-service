@@ -11,7 +11,6 @@ use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directo
 use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, Repository, UpdateIndexerStatusAndProcessIdDb,
 };
-use crate::publishers::indexers::publish_start_indexer;
 use crate::utils::env::get_environment_variable;
 use crate::utils::PathExtractor;
 use crate::AppState;
@@ -84,11 +83,11 @@ pub async fn start_all_indexers() -> Result<(), IndexerError> {
         .map_err(IndexerError::InfraError)?;
 
     for indexer in indexers {
-        // we can ideally check if the indexer is already running here but if there are a lot of indexers
-        // it would be too many db queries at startup, hence we do that inside the start_indexer function
-        // which runs by consuming from the SQS queue
+        // we can ideally check if the indexer is already running here but if there are a lot of
+        // indexers it would be too many db queries at startup, hence we do that inside the
+        // start_indexer function which runs by consuming from the SQS queue
         // TODO: Optimize this in the future (async tokio tasks?)
-        publish_start_indexer(indexer.id, 1, 0).await?;
+        // publish_start_indexer(indexer.id, 1, 0).await?;
     }
 
     Ok(())

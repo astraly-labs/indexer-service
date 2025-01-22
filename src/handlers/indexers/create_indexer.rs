@@ -16,7 +16,6 @@ use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::infra::db::schema::indexers;
 use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
-use crate::publishers::indexers::publish_start_indexer;
 use crate::utils::env::get_environment_variable;
 use crate::AppState;
 
@@ -181,7 +180,7 @@ pub async fn create_indexer(
         })
         .await?;
 
-    publish_start_indexer(id, 1, 0).await?;
+    // publish_start_indexer(id, 1, 0).await?;
 
     Ok(Json(created_indexer))
 }
