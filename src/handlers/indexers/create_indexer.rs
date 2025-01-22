@@ -26,6 +26,8 @@ pub struct CreateIndexerRequest {
     pub target_url: Option<String>,
     pub table_name: Option<String>,
     pub custom_connection_string: Option<String>,
+    pub starting_block: Option<i64>,
+    pub indexer_id: Option<String>,
     #[serde(skip)]
     pub data: Bytes,
     #[serde(skip)]
@@ -39,6 +41,8 @@ impl Default for CreateIndexerRequest {
             target_url: None,
             table_name: None,
             custom_connection_string: None,
+            starting_block: None,
+            indexer_id: None,
             data: Bytes::new(),
             status_server_port: 1234,
         }
@@ -100,11 +104,26 @@ async fn build_create_indexer_request(request: &mut Multipart) -> Result<CreateI
                 create_indexer_request.indexer_type =
                     IndexerType::from_str(field.as_str()).map_err(|_| IndexerError::InvalidIndexerType(field))?
             }
+            "starting_block" => {
+                let field = field.text().await.map_err(IndexerError::FailedToReadMultipartField)?;
+                create_indexer_request.starting_block = Some(
+                    field.parse().map_err(|_| IndexerError::InternalServerError("Invalid starting block".into()))?,
+                );
+            }
+            "indexer_id" => {
+                create_indexer_request.indexer_id =
+                    Some(field.text().await.map_err(IndexerError::FailedToReadMultipartField)?)
+            }
             _ => return Err(IndexerError::UnexpectedMultipartField(field_name.to_string())),
         };
     }
 
     create_indexer_request.set_random_port();
+
+    // For Postgres indexers, use table_name as indexer_id if not provided
+    if create_indexer_request.indexer_type == IndexerType::Postgres && create_indexer_request.indexer_id.is_none() {
+        create_indexer_request.indexer_id = create_indexer_request.table_name.clone();
+    }
 
     if !create_indexer_request.is_ready() {
         return Err(IndexerError::FailedToBuildCreateIndexerRequest);
@@ -127,6 +146,8 @@ pub async fn create_indexer(
         table_name: create_indexer_request.table_name.clone(),
         status_server_port: None,
         custom_connection_string: create_indexer_request.custom_connection_string.clone(),
+        starting_block: create_indexer_request.starting_block,
+        indexer_id: create_indexer_request.indexer_id.clone(),
     };
 
     let config = config().await;

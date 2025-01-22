@@ -24,6 +24,8 @@ pub struct IndexerDb {
     pub table_name: Option<String>,
     pub status_server_port: Option<i32>,
     pub custom_connection_string: Option<String>,
+    pub starting_block: Option<i64>,
+    pub indexer_id: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -41,6 +43,8 @@ pub struct NewIndexerDb {
     pub table_name: Option<String>,
     pub status_server_port: Option<i32>,
     pub custom_connection_string: Option<String>,
+    pub starting_block: Option<i64>,
+    pub indexer_id: Option<String>,
 }
 
 #[derive(Deserialize, Insertable)]
@@ -223,6 +227,8 @@ impl TryFrom<NewIndexerDb> for IndexerModel {
             table_name: value.table_name,
             status_server_port: value.status_server_port,
             custom_connection_string: value.custom_connection_string,
+            starting_block: value.starting_block,
+            indexer_id: value.indexer_id,
         }
         .try_into()?;
         Ok(model)
@@ -241,6 +247,8 @@ impl TryFrom<IndexerDb> for IndexerModel {
             table_name: value.table_name,
             status_server_port: value.status_server_port,
             custom_connection_string: value.custom_connection_string,
+            starting_block: value.starting_block,
+            indexer_id: value.indexer_id,
         };
         Ok(model)
     }
@@ -278,6 +286,8 @@ mod tests {
             table_name: Some(table_name.into()),
             status_server_port: Some(1234),
             custom_connection_string: None,
+            starting_block: None,
+            indexer_id: None,
         };
 
         let indexer_model: Result<IndexerModel, ParseError> = indexer_db.try_into();
@@ -319,6 +329,8 @@ mod tests {
             table_name: Some(table_name.into()),
             status_server_port: Some(1234),
             custom_connection_string: None,
+            starting_block: None,
+            indexer_id: None,
         };
 
         let indexer_model: Result<IndexerModel, ParseError> = indexer_db.try_into();

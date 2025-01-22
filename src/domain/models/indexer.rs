@@ -42,6 +42,8 @@ pub struct IndexerModel {
     pub table_name: Option<String>,
     pub status_server_port: Option<i32>,
     pub custom_connection_string: Option<String>,
+    pub starting_block: Option<i64>,
+    pub indexer_id: Option<String>,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]

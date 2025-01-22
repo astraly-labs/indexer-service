@@ -8,7 +8,6 @@ use chrono::Utc;
 use shutil::pipe;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
-use uuid::Uuid;
 
 use crate::constants::indexers::{
     MAX_INDEXER_START_RETRIES, START_INDEXER_DELAY_SECONDS, WORKING_INDEXER_THRESHOLD_TIME_MINUTES,
@@ -18,6 +17,8 @@ use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, 
 use crate::handlers::indexers::utils::get_script_tmp_directory;
 use crate::publishers::indexers::{publish_failed_indexer, publish_start_indexer, publish_stop_indexer};
 use crate::utils::env::get_environment_variable;
+
+pub const DEFAULT_STARTING_BLOCK: i64 = 1;
 
 #[async_trait]
 pub trait Indexer {
@@ -35,7 +36,7 @@ pub trait Indexer {
         let auth_token = get_environment_variable("APIBARA_AUTH_TOKEN");
         let etcd_url = get_environment_variable("APIBARA_ETCD_URL");
 
-        let indexer_id = indexer.id.to_string();
+        let sink_id = indexer.indexer_id.clone().unwrap_or_else(|| indexer.id.to_string());
         let status_server_address = format!("0.0.0.0:{port}", port = indexer.status_server_port.unwrap_or(1234));
 
         let mut args = vec![
@@ -46,7 +47,7 @@ pub trait Indexer {
             "--persist-to-etcd",
             etcd_url.as_str(),
             "--sink-id",
-            indexer_id.as_str(),
+            sink_id.as_str(),
             "--status-server-address",
             status_server_address.as_str(),
             "--allow-env-from-env",
@@ -59,9 +60,10 @@ pub trait Indexer {
             // Silence  stdout and stderr
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            .env("STARTING_BLOCK", indexer.starting_block.unwrap_or(DEFAULT_STARTING_BLOCK).to_string())
             .args(args)
             .spawn()
-            .map_err(|_| IndexerError::FailedToStartIndexer(indexer_id.clone()))?;
+            .map_err(|_| IndexerError::FailedToStartIndexer(indexer.id.to_string()))?;
 
         let id = child_handle.id().expect("Failed to get the child process id");
 
@@ -71,6 +73,7 @@ pub trait Indexer {
         let mut stdout_reader = BufReader::new(stdout).lines();
         let mut stderr_reader = BufReader::new(stderr).lines();
 
+        let indexer_id = indexer.id;
         tokio::spawn(async move {
             loop {
                 tokio::select! {
@@ -89,7 +92,6 @@ pub trait Indexer {
                         }
                     }
                     result = child_handle.wait() => {
-                        let indexer_id = Uuid::parse_str(indexer_id.as_str()).expect("Invalid UUID for indexer");
                         match result.unwrap().success() {
                             true => {
                                 tracing::info!("Child process exited successfully {}", indexer_id);
@@ -210,9 +212,11 @@ mod tests {
             process_id: None,
             status: IndexerStatus::Created,
             target_url: Some("https://example.com".to_string()),
+            starting_block: None,
             table_name: None,
             status_server_port: Some(1234),
             custom_connection_string: None,
+            indexer_id: None,
         };
 
         // clear the sqs queue
