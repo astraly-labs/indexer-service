@@ -185,6 +185,9 @@ pub async fn create_indexer(
 
     start_indexer(created_indexer.id).await?;
 
+    // wait a bit for the indexer to start
+    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
     // check the status server from apibara
     // if we have an error we simply return the error and shutdown the indexer
     let server_port = created_indexer.status_server_port.ok_or(IndexerError::IndexerStatusServerPortNotFound)?;

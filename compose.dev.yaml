@@ -31,7 +31,9 @@ services:
       - ls
     volumes:
       - onchain-db-data:/var/lib/postgresql/data
-      - ./infra/onchain-db/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - type: bind
+        source: ${PWD}/infra/onchain-db/01-init.sql
+        target: /docker-entrypoint-initdb.d/01-init.sql
     environment:
       - POSTGRES_DB=pragma
       - PGPORT=5432
