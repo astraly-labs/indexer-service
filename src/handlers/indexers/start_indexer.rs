@@ -1,7 +1,9 @@
 use std::fs;
 use std::io::Write;
 
+// use aws_sdk_s3::primitives::AggregatedBytes;
 use axum::extract::State;
+use object_store::path::Path;
 use uuid::Uuid;
 
 use crate::config::config;
@@ -11,7 +13,7 @@ use crate::handlers::indexers::utils::{get_s3_script_key, get_script_tmp_directo
 use crate::infra::repositories::indexer_repository::{
     IndexerFilter, IndexerRepository, Repository, UpdateIndexerStatusAndProcessIdDb,
 };
-use crate::utils::env::get_environment_variable;
+// use crate::utils::env::get_environment_variable;
 use crate::utils::PathExtractor;
 use crate::AppState;
 
@@ -37,21 +39,27 @@ pub async fn start_indexer(id: Uuid) -> Result<(), IndexerError> {
         _ => return Err(IndexerError::InvalidIndexerStatus(indexer_model.status)),
     }
 
-    let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
+    // let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
+
+    // let data = config
+    //     .s3_client()
+    //     .get_object()
+    //     .bucket(bucket_name)
+    //     .key(get_s3_script_key(id))
+    //     .send()
+    //     .await
+    //     .map_err(IndexerError::FailedToGetFromS3)?;
 
     let data = config
-        .s3_client()
-        .get_object()
-        .bucket(bucket_name)
-        .key(get_s3_script_key(id))
-        .send()
+        .object_store()
+        .get(&Path::from(get_s3_script_key(id)))
         .await
-        .map_err(IndexerError::FailedToGetFromS3)?;
+        .map_err(IndexerError::FailedToGetFromStore)?;
 
-    let aggregated_bytes = data.body.collect().await.map_err(IndexerError::FailedToCollectBytesFromS3)?;
+    let aggregated_bytes = data.bytes().await.map_err(IndexerError::FailedToCollectBytesFromStore)?;
 
     let mut file = fs::File::create(get_script_tmp_directory(id)).map_err(IndexerError::FailedToCreateFile)?;
-    file.write_all(aggregated_bytes.into_bytes().to_vec().as_slice()).map_err(IndexerError::FailedToCreateFile)?;
+    file.write_all(aggregated_bytes.to_vec().as_slice()).map_err(IndexerError::FailedToCreateFile)?;
 
     let process_id = indexer.start(&indexer_model).await?.into();
 

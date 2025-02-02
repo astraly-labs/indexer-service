@@ -7,6 +7,7 @@ use axum::Json;
 use diesel::SelectableHelper;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
+use object_store::path::Path;
 use serde::Deserialize;
 use uuid::Uuid;
 
@@ -19,7 +20,6 @@ use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::infra::db::schema::indexers;
 use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
-use crate::utils::env::get_environment_variable;
 use crate::AppState;
 
 #[derive(Debug, Deserialize)]
@@ -153,7 +153,7 @@ pub async fn create_indexer(
     };
 
     let config = config().await;
-    let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
+    // let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
 
     let connection = &mut state.pool.get().await.expect("Failed to get a connection from the pool");
     let created_indexer = connection
@@ -167,15 +167,22 @@ pub async fn create_indexer(
                     .try_into()
                     .map_err(|e| IndexerError::InfraError(InfraError::ParseError(e)))?;
 
+                // config
+                //     .s3_client()
+                //     .put_object()
+                //     .bucket(bucket_name)
+                //     .key(get_s3_script_key(id))
+                //     .body(create_indexer_request.data.into())
+                //     .send()
+                //     .await
+                //     .map_err(IndexerError::FailedToUploadToS3)?;
+
+                let location = Path::from(get_s3_script_key(id));
                 config
-                    .s3_client()
-                    .put_object()
-                    .bucket(bucket_name)
-                    .key(get_s3_script_key(id))
-                    .body(create_indexer_request.data.into())
-                    .send()
+                    .object_store()
+                    .put(&location, create_indexer_request.data.into())
                     .await
-                    .map_err(IndexerError::FailedToUploadToS3)?;
+                    .map_err(IndexerError::FailedToUploadToStore)?;
 
                 Ok(created_indexer)
             }

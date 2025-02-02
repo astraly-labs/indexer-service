@@ -99,7 +99,7 @@ async fn start_indexer(#[future] setup_server: SocketAddr) {
     let addr = setup_server.await;
 
     let client = hyper::Client::new();
-    let config = config().await;
+    let _config = config().await;
 
     // Create indexer
     let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
@@ -125,7 +125,7 @@ async fn start_two_indexers(#[future] setup_server: SocketAddr) {
     let addr = setup_server.await;
 
     let client = hyper::Client::new();
-    let config = config().await;
+    let _config = config().await;
 
     // Create indexer
     let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
@@ -171,7 +171,7 @@ async fn failed_running_indexer(#[future] setup_server: SocketAddr) {
     let addr = setup_server.await;
 
     let client = hyper::Client::new();
-    let config = config().await;
+    let _config = config().await;
 
     // Create indexer
     let response = send_create_webhook_indexer_request(client.clone(), BROKEN_APIBARA_SCRIPT, addr).await;
@@ -233,7 +233,7 @@ async fn failed_stop_indexer(#[future] setup_server: SocketAddr) {
     let addr = setup_server.await;
 
     let client = hyper::Client::new();
-    let config = config().await;
+    let _config = config().await;
 
     // Create indexer
     let response = send_create_webhook_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;

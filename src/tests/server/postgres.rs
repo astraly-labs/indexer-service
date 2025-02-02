@@ -22,7 +22,7 @@ async fn create_postgres_indexer(#[future] setup_server: SocketAddr) {
     let addr = setup_server.await;
 
     let client = hyper::Client::new();
-    let config = config().await;
+    let _config = config().await;
 
     // Create indexer
     let response = send_create_postgres_indexer_request(client.clone(), WORKING_APIBARA_SCRIPT, addr).await;
