@@ -5,7 +5,6 @@
 /tmp/*
 .DS_Store
 rustc-ice-*.txt
-/scripts/*
 /infra/*
 
 # to keep the bin folder
