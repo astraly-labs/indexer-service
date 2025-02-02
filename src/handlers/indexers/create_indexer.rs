@@ -10,6 +10,9 @@ use diesel_async::{AsyncConnection, RunQueryDsl};
 use serde::Deserialize;
 use uuid::Uuid;
 
+use super::fail_indexer::fail_indexer;
+use super::start_indexer::start_indexer;
+use super::utils::query_status_server;
 use crate::config::config;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_s3_script_key;
@@ -18,8 +21,6 @@ use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
 use crate::utils::env::get_environment_variable;
 use crate::AppState;
-
-use super::start_indexer::start_indexer;
 
 #[derive(Debug, Deserialize)]
 pub struct CreateIndexerRequest {
@@ -182,11 +183,15 @@ pub async fn create_indexer(
         })
         .await?;
 
-    start_indexer(created_indexer.id, 0).await?;
+    start_indexer(created_indexer.id).await?;
 
     // check the status server from apibara
     // if we have an error we simply return the error and shutdown the indexer
-    
+    let server_port = created_indexer.status_server_port.ok_or(IndexerError::IndexerStatusServerPortNotFound)?;
+    let server_status = query_status_server(server_port).await?;
+    if server_status.status != 1 {
+        fail_indexer(created_indexer.id).await?;
+    }
 
     Ok(Json(created_indexer))
 }

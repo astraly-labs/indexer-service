@@ -10,7 +10,6 @@ use rstest::{fixture, rstest};
 use tokio::process::Command;
 
 use crate::config::{config, config_force_init};
-use crate::constants::sqs::{START_INDEXER_QUEUE, STOP_INDEXER_QUEUE};
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus};
 use crate::domain::models::types::AxumErrorResponse;
 use crate::handlers::indexers::fail_indexer::fail_indexer;
@@ -20,7 +19,6 @@ use crate::tests::common::utils::{
     get_indexer, get_indexers, is_process_running, send_create_indexer_request, send_create_webhook_indexer_request,
     send_delete_indexer_request, send_start_indexer_request, send_stop_indexer_request,
 };
-use crate::types::sqs::{StartIndexerRequest, StopIndexerRequest};
 use crate::AppState;
 
 #[fixture]

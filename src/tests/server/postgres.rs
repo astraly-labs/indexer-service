@@ -5,7 +5,6 @@ use mpart_async::client::MultipartRequest;
 use rstest::rstest;
 
 use crate::config::config;
-use crate::constants::sqs::START_INDEXER_QUEUE;
 use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
 use crate::domain::models::types::AxumErrorResponse;
 use crate::handlers::indexers::utils::get_s3_script_key;
@@ -15,7 +14,6 @@ use crate::tests::common::utils::{
     send_create_postgres_indexer_request,
 };
 use crate::tests::server::common::setup_server;
-use crate::types::sqs::StartIndexerRequest;
 use crate::utils::env::get_environment_variable;
 
 #[rstest]
