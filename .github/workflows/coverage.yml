@@ -20,7 +20,7 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       APIBARA_AUTH_TOKEN: ${{ secrets.APIBARA_AUTH_TOKEN }}
-      APIBARA_ETCD_URL: http://localhost:2379
+      APIBARA_REDIS_URL: http://localhost:2379
       INDEXER_SERVICE_BUCKET: indexer-service
 
     services:
@@ -51,13 +51,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-      etcd:
-        image: bitnami/etcd:3.5.0
+      redis:
+        image: redis:7
         ports:
-          - 2379:2379
-          - 2380:2380
-        env:
-          ALLOW_NONE_AUTHENTICATION: yes
+          - 6379:6379
 
     steps:
       - uses: actions/checkout@v3

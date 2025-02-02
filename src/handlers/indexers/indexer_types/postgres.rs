@@ -8,7 +8,7 @@ pub struct PostgresIndexer;
 
 #[async_trait]
 impl Indexer for PostgresIndexer {
-    async fn start(&self, indexer: &IndexerModel, attempt: u32) -> Result<u32, IndexerError> {
+    async fn start(&self, indexer: &IndexerModel, _attempt: u32) -> Result<u32, IndexerError> {
         let binary_file = format!("{}/{}", get_environment_variable("BINARY_BASE_PATH"), "sink-postgres");
         let postgres_connection_string = indexer
             .custom_connection_string
@@ -18,7 +18,6 @@ impl Indexer for PostgresIndexer {
         let id = self.start_common(
             binary_file,
             indexer,
-            attempt,
             &["--connection-string", postgres_connection_string.as_str(), "--table-name", table_name.as_str()],
         )?;
         Ok(id)

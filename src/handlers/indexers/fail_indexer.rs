@@ -4,7 +4,7 @@ use crate::config::config;
 use crate::domain::models::indexer::{IndexerError, IndexerStatus};
 use crate::infra::repositories::indexer_repository::{IndexerRepository, Repository, UpdateIndexerStatusDb};
 
-pub async fn fail_indexer(id: Uuid) -> Result<(), IndexerError> {
+pub async fn _fail_indexer(id: Uuid) -> Result<(), IndexerError> {
     let config = config().await;
     let mut repository = IndexerRepository::new(config.pool());
     let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;

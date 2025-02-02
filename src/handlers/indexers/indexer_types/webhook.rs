@@ -8,12 +8,11 @@ pub struct WebhookIndexer;
 
 #[async_trait]
 impl Indexer for WebhookIndexer {
-    async fn start(&self, indexer: &IndexerModel, attempt: u32) -> Result<u32, IndexerError> {
+    async fn start(&self, indexer: &IndexerModel, _attempt: u32) -> Result<u32, IndexerError> {
         let binary_file = format!("{}/{}", get_environment_variable("BINARY_BASE_PATH"), "sink-webhook");
         let id = self.start_common(
             binary_file,
             indexer,
-            attempt,
             &["--target-url", indexer.target_url.clone().expect("`target_url` not set for webhook indexer").as_str()],
         )?;
         Ok(id)

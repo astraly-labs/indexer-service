@@ -1,33 +1,10 @@
 version: "3"
 
 services:
-  # indexing:
-  #   build: .
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - APIBARA_ETCD_URL=http://localhost:2379
-  #     - LOCALSTACK_ENDPOINT=http://localstack:4566
-  #     - DATABASE_URL=postgres://postgres:pragma_password@onchain-db:5432
-  #     - APIBARA_POSTGRES_CONNECTION_STRING=postgres://postgres:pragma_password@onchain-db:5432/pragma
-  #     - AWS_ACCESS_KEY_ID=test
-  #     - AWS_SECRET_ACCESS_KEY=test
-  #     - BINARY_BASE_PATH=/bin
-  #   ports:
-  #     - 8080:8080
-  #   networks:
-  #     - ls
-  #   depends_on:
-  #     onchain-db:
-  #       condition: service_healthy
-
-  etcd:
-    image: bitnami/etcd:3.5.0
+  redis:
+    image: redis:7
     ports:
-      - 2379:2379
-      - 2380:2380
-    environment:
-      - ALLOW_NONE_AUTHENTICATION=yes
+      - 6379:6379
     networks:
       - ls
 

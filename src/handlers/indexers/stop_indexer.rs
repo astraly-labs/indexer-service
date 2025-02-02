@@ -51,7 +51,7 @@ pub async fn stop_indexer(
 /// It's triggered by the stop indexer queue which is called when indexer stops with a success
 /// status It's possible that the status was already updated to Stopped/FailStopping if the user
 /// called the /stop API. So we have `check_redundant_update_call` to avoid duplicate updates.
-pub async fn update_indexer_state(id: Uuid, new_status: IndexerStatus) -> Result<(), IndexerError> {
+pub async fn _update_indexer_state(id: Uuid, new_status: IndexerStatus) -> Result<(), IndexerError> {
     let config = config().await;
     let mut repository = IndexerRepository::new(config.pool());
     let indexer_model = repository.get(id).await.map_err(IndexerError::InfraError)?;

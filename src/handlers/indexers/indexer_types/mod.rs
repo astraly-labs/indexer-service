@@ -4,16 +4,12 @@ pub mod webhook;
 use std::process::Stdio;
 
 use axum::async_trait;
-use chrono::Utc;
 use shutil::pipe;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-// use crate::constants::indexers::{
-//     MAX_INDEXER_START_RETRIES, START_INDEXER_DELAY_SECONDS, WORKING_INDEXER_THRESHOLD_TIME_MINUTES,
-// };
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
-use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
+use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
 use crate::utils::env::get_environment_variable;
 
@@ -28,12 +24,11 @@ pub trait Indexer {
         &self,
         binary: String,
         indexer: &IndexerModel,
-        attempt: u32,
         extra_args: &[&str],
     ) -> Result<u32, IndexerError> {
         let script_path = get_script_tmp_directory(indexer.id);
         let auth_token = get_environment_variable("APIBARA_AUTH_TOKEN");
-        let etcd_url = get_environment_variable("APIBARA_ETCD_URL");
+        let redis_url = get_environment_variable("APIBARA_REDIS_URL");
 
         let sink_id = indexer.indexer_id.clone().unwrap_or_else(|| indexer.id.to_string());
         let status_server_address = format!("0.0.0.0:{port}", port = indexer.status_server_port.unwrap_or(1234));
@@ -43,8 +38,8 @@ pub trait Indexer {
             script_path.as_str(),
             "--auth-token",
             auth_token.as_str(),
-            "--persist-to-etcd",
-            etcd_url.as_str(),
+            "--persist-to-redis",
+            redis_url.as_str(),
             "--sink-id",
             sink_id.as_str(),
             "--status-server-address",
@@ -54,8 +49,6 @@ pub trait Indexer {
         ];
         args.extend_from_slice(extra_args);
 
-        let indexer_start_time = Utc::now().time();
-        tracing::info!("Using binary {:?}", binary);
         let mut child_handle = Command::new(binary)
             // Silence  stdout and stderr
             .stdout(Stdio::piped())
@@ -99,26 +92,7 @@ pub trait Indexer {
                             },
                             false => {
                                 tracing::error!("Child process exited with an error {}", indexer_id);
-                                // let indexer_end_time = Utc::now().time();
-                                // let indexer_duration = indexer_end_time - indexer_start_time;
-                                // if indexer_duration.num_minutes() > WORKING_INDEXER_THRESHOLD_TIME_MINUTES {
-                                //     // if the indexer ran for more than threshold time, we will try to restart it
-                                //     // with attempt id 1. we don't want to increment the attempt id as this was
-                                //     // a successful run and as we want MAX_INDEXER_START_RETRIES to restart the indexer
-                                //     tracing::error!("Indexer {} ran for more than 5 minutes, trying restart", indexer_id);
-                                // }
-                                // } else if attempt >= MAX_INDEXER_START_RETRIES {
-                                    // TODO: update indexer status to failed
-                                    // } else {
-                                        // if the indexer ran for less than threshold time, we will try to restart it
-                                        // by incrementing the attempt id. we increment the attempt id as this was
-                                        // a unsuccessful run and a we don't want to exceed MAX_INDEXER_START_RETRIES
-                                        // we also add a delay before starting the indexer as it's possible there are other
-                                        // instances of the service running which have acquired the lock, they need to shut down
-                                        // before this service can get the lock.
-                                        // TODO: start indexer
-                                        // }
-                                //     let _ = start_indexer(indexer_id, 1).await;
+                                // let _ = start_indexer(indexer_id, 1).await;
                             }
                         }
                         break // child process exited
@@ -148,8 +122,8 @@ pub trait Indexer {
 
         let is_success = Command::new("kill")
             // Silence  stdout and stderr
-            // .stdout(Stdio::null())
-            // .stderr(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .args([
                 process_id.to_string().as_str(),
             ])
