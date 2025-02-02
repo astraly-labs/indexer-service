@@ -35,7 +35,6 @@ mod routes;
 /// Tests
 #[cfg(test)]
 mod tests;
-pub mod types;
 /// Utilities
 pub mod utils;
 
