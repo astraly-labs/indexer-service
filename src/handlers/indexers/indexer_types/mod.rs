@@ -9,9 +9,9 @@ use shutil::pipe;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use crate::constants::indexers::{
-    MAX_INDEXER_START_RETRIES, START_INDEXER_DELAY_SECONDS, WORKING_INDEXER_THRESHOLD_TIME_MINUTES,
-};
+// use crate::constants::indexers::{
+//     MAX_INDEXER_START_RETRIES, START_INDEXER_DELAY_SECONDS, WORKING_INDEXER_THRESHOLD_TIME_MINUTES,
+// };
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
@@ -55,6 +55,7 @@ pub trait Indexer {
         args.extend_from_slice(extra_args);
 
         let indexer_start_time = Utc::now().time();
+        tracing::info!("Using binary {:?}", binary);
         let mut child_handle = Command::new(binary)
             // Silence  stdout and stderr
             .stdout(Stdio::piped())
@@ -62,7 +63,7 @@ pub trait Indexer {
             .env("STARTING_BLOCK", indexer.starting_block.unwrap_or(DEFAULT_STARTING_BLOCK).to_string())
             .args(args)
             .spawn()
-            .map_err(|_| IndexerError::FailedToStartIndexer(indexer.id.to_string()))?;
+            .map_err(|e| IndexerError::FailedToStartIndexer(e.to_string(), indexer.id.to_string()))?;
 
         let id = child_handle.id().expect("Failed to get the child process id");
 
@@ -94,30 +95,30 @@ pub trait Indexer {
                         match result.unwrap().success() {
                             true => {
                                 tracing::info!("Child process exited successfully {}", indexer_id);
-                                // publish_stop_indexer(indexer_id, IndexerStatus::Stopped).await.unwrap();
+                                // TODO: stop indexer
                             },
                             false => {
                                 tracing::error!("Child process exited with an error {}", indexer_id);
-                                let indexer_end_time = Utc::now().time();
-                                let indexer_duration = indexer_end_time - indexer_start_time;
-                                if indexer_duration.num_minutes() > WORKING_INDEXER_THRESHOLD_TIME_MINUTES {
-                                    // if the indexer ran for more than threshold time, we will try to restart it
-                                    // with attempt id 1. we don't want to increment the attempt id as this was
-                                    // a successful run and a we want MAX_INDEXER_START_RETRIES to restart the indexer
-                                    tracing::error!("Indexer {} ran for more than 5 minutes, trying restart", indexer_id);
-                                    // publish_start_indexer(indexer_id, 1, 0).await.unwrap();
-                                } else if attempt >= MAX_INDEXER_START_RETRIES {
-                                    // publish_failed_indexer(indexer_id).await.unwrap();
-                                } else {
-                                    // if the indexer ran for less than threshold time, we will try to restart it
-                                    // by incrementing the attempt id. we increment the attempt id as this was
-                                    // a unsuccessful run and a we don't want to exceed MAX_INDEXER_START_RETRIES
-                                    // we also add a delay before starting the indexer as it's possible there are other
-                                    // instances of the service running which have acquired the lock, they need to shut down
-                                    // before this service can get the lock.
-                                    // publish_start_indexer(indexer_id, attempt+1, START_INDEXER_DELAY_SECONDS).await.unwrap();
-                                }
-
+                                // let indexer_end_time = Utc::now().time();
+                                // let indexer_duration = indexer_end_time - indexer_start_time;
+                                // if indexer_duration.num_minutes() > WORKING_INDEXER_THRESHOLD_TIME_MINUTES {
+                                //     // if the indexer ran for more than threshold time, we will try to restart it
+                                //     // with attempt id 1. we don't want to increment the attempt id as this was
+                                //     // a successful run and as we want MAX_INDEXER_START_RETRIES to restart the indexer
+                                //     tracing::error!("Indexer {} ran for more than 5 minutes, trying restart", indexer_id);
+                                // }
+                                // } else if attempt >= MAX_INDEXER_START_RETRIES {
+                                    // TODO: update indexer status to failed
+                                    // } else {
+                                        // if the indexer ran for less than threshold time, we will try to restart it
+                                        // by incrementing the attempt id. we increment the attempt id as this was
+                                        // a unsuccessful run and a we don't want to exceed MAX_INDEXER_START_RETRIES
+                                        // we also add a delay before starting the indexer as it's possible there are other
+                                        // instances of the service running which have acquired the lock, they need to shut down
+                                        // before this service can get the lock.
+                                        // TODO: start indexer
+                                        // }
+                                //     let _ = start_indexer(indexer_id, 1).await;
                             }
                         }
                         break // child process exited

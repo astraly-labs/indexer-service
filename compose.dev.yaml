@@ -1,19 +1,33 @@
 version: "3"
 
 services:
-  indexing:
-    build: .
-    env_file:
-      - .env
-    environment:
-      - APIBARA_ETCD_URL=http://host.docker.internal:2379
-      - LOCALSTACK_ENDPOINT=http://localstack:4566
-      - DATABASE_URL=postgres://postgres:postgres@host.docker.internal:5432
-      - APIBARA_POSTGRES_CONNECTION_STRING=postgres://postgres:postgres@host.docker.internal:5432/postgres
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
+  # indexing:
+  #   build: .
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - APIBARA_ETCD_URL=http://localhost:2379
+  #     - LOCALSTACK_ENDPOINT=http://localstack:4566
+  #     - DATABASE_URL=postgres://postgres:pragma_password@onchain-db:5432
+  #     - APIBARA_POSTGRES_CONNECTION_STRING=postgres://postgres:pragma_password@onchain-db:5432/pragma
+  #     - AWS_ACCESS_KEY_ID=test
+  #     - AWS_SECRET_ACCESS_KEY=test
+  #     - BINARY_BASE_PATH=/bin
+  #   ports:
+  #     - 8080:8080
+  #   networks:
+  #     - ls
+  #   depends_on:
+  #     onchain-db:
+  #       condition: service_healthy
+
+  etcd:
+    image: bitnami/etcd:3.5.0
     ports:
-      - 8080:8080
+      - 2379:2379
+      - 2380:2380
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
     networks:
       - ls
 
@@ -32,7 +46,32 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - ls
+      
+  onchain-db:
+    image: timescale/timescaledb-ha:pg14-latest
+    restart: always
+    networks:
+      - ls
+    volumes:
+      - onchain-db-data:/var/lib/postgresql/data
+      - ./infra/onchain-db/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    environment:
+      - POSTGRES_DB=pragma
+      - PGPORT=5432
+      - POSTGRES_PASSWORD=pragma_password
+    ports:
+      - 5432:5432
+    expose:
+      - 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 networks:
   ls:
     name: ls
+
+volumes:
+  onchain-db-data:

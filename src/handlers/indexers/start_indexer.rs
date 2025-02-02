@@ -83,11 +83,9 @@ pub async fn start_all_indexers() -> Result<(), IndexerError> {
         .map_err(IndexerError::InfraError)?;
 
     for indexer in indexers {
-        // we can ideally check if the indexer is already running here but if there are a lot of
-        // indexers it would be too many db queries at startup, hence we do that inside the
-        // start_indexer function which runs by consuming from the SQS queue
-        // TODO: Optimize this in the future (async tokio tasks?)
-        // publish_start_indexer(indexer.id, 1, 0).await?;
+        
+        // TODO: update indexer status if start fails and not return
+        let _ = start_indexer(indexer.id, 0).await;
     }
 
     Ok(())
