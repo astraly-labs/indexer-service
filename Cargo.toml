@@ -25,6 +25,7 @@ dotenvy = "0.15"
 futures-util = "0.3.21"
 hyper = { version = "0.14", features = ["full"] }
 mime = "0.3"
+object_store = { version = "0.11.2", features = ["aws", "gcp"] }
 prost = "0.12.3"
 rstest = "0.18.2"
 rustls = "0.20.8"
@@ -50,7 +51,6 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.4", features = ["fast-rng", "v4", "serde"] }
 value-bag = "1.4.1"
-object_store = { version = "0.11.2", features = ["aws", "gcp"] }
 
 [dev-dependencies]
 tower = { version = "0.4", features = ["util"] }
