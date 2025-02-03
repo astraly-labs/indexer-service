@@ -22,6 +22,9 @@ jobs:
       APIBARA_AUTH_TOKEN: ${{ secrets.APIBARA_AUTH_TOKEN }}
       APIBARA_REDIS_URL: http://localhost:2379
       INDEXER_SERVICE_BUCKET: indexer-service
+      GCS_ENDPOINT_URL: http://localhost:4443
+      GCS_BUCKET_NAME: test-bucket
+      GCS_SERVICE_ACCOUNT: /tmp/gcs-sa.json
 
     services:
       postgres:
@@ -56,8 +59,27 @@ jobs:
         ports:
           - 6379:6379
 
+      fake-gcs:
+        image: tustvold/fake-gcs-server
+        ports:
+          - 4443:4443
+        options: >-
+          --health-cmd "curl -f http://localhost:4443/storage/v1/b"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        env:
+          STORAGE_BACKEND: memory
+          SCHEME: http
+          PUBLIC_HOST: localhost:4443
+          EXTERNAL_URL: localhost:4443
+
     steps:
       - uses: actions/checkout@v3
+
+      - name: Setup GCS service account
+        run: |
+          echo '{"type":"service_account","project_id":"test-project","private_key_id":"mock","private_key":"mock","client_email":"test@test-project.iam.gserviceaccount.com","client_id":"mock","auth_uri":"mock","token_uri":"mock","auth_provider_x509_cert_url":"mock","client_x509_cert_url":"mock"}' > /tmp/gcs-sa.json
 
       # selecting a toolchain either by action or manual `rustup` calls should happen
       # before the plugin, as the cache uses the current rustc version as its cache key
@@ -87,6 +109,13 @@ jobs:
           awslocal s3api create-bucket --bucket indexer-service --region eu-west-3 --create-bucket-configuration LocationConstraint=eu-west-3
           awslocal s3api put-object --bucket indexer-service --key apibara-scripts/
           awslocal s3api list-buckets 
+
+      - name: Initialize GCS bucket
+        run: |
+          curl -X POST \
+            --data-binary '{"name":"test-bucket"}' \
+            -H "Content-Type: application/json" \
+            "http://localhost:4443/storage/v1/b"
 
       - uses: Swatinem/rust-cache@v2
 
