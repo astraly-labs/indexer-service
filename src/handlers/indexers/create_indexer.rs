@@ -7,17 +7,19 @@ use axum::Json;
 use diesel::SelectableHelper;
 use diesel_async::scoped_futures::ScopedFutureExt;
 use diesel_async::{AsyncConnection, RunQueryDsl};
+use object_store::path::Path;
 use serde::Deserialize;
 use uuid::Uuid;
 
+use super::fail_indexer::fail_indexer;
+use super::start_indexer::start_indexer;
+use super::utils::query_status_server;
 use crate::config::config;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::infra::db::schema::indexers;
 use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
-use crate::publishers::indexers::publish_start_indexer;
-use crate::utils::env::get_environment_variable;
 use crate::AppState;
 
 #[derive(Debug, Deserialize)]
@@ -151,7 +153,6 @@ pub async fn create_indexer(
     };
 
     let config = config().await;
-    let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
 
     let connection = &mut state.pool.get().await.expect("Failed to get a connection from the pool");
     let created_indexer = connection
@@ -165,15 +166,12 @@ pub async fn create_indexer(
                     .try_into()
                     .map_err(|e| IndexerError::InfraError(InfraError::ParseError(e)))?;
 
+                let location = Path::from(get_s3_script_key(id));
                 config
-                    .s3_client()
-                    .put_object()
-                    .bucket(bucket_name)
-                    .key(get_s3_script_key(id))
-                    .body(create_indexer_request.data.into())
-                    .send()
+                    .object_store()
+                    .put(&location, create_indexer_request.data.into())
                     .await
-                    .map_err(IndexerError::FailedToUploadToS3)?;
+                    .map_err(IndexerError::FailedToUploadToStore)?;
 
                 Ok(created_indexer)
             }
@@ -181,7 +179,18 @@ pub async fn create_indexer(
         })
         .await?;
 
-    publish_start_indexer(id, 1, 0).await?;
+    start_indexer(created_indexer.id).await?;
+
+    // wait a bit for the indexer to start
+    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+
+    // check the status server from apibara
+    // if we have an error we simply return the error and shutdown the indexer
+    let server_port = created_indexer.status_server_port.ok_or(IndexerError::IndexerStatusServerPortNotFound)?;
+    let server_status = query_status_server(server_port).await?;
+    if server_status.status != 1 {
+        fail_indexer(created_indexer.id).await?;
+    }
 
     Ok(Json(created_indexer))
 }

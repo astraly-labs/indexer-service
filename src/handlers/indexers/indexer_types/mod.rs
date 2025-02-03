@@ -4,37 +4,26 @@ pub mod webhook;
 use std::process::Stdio;
 
 use axum::async_trait;
-use chrono::Utc;
 use shutil::pipe;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use crate::constants::indexers::{
-    MAX_INDEXER_START_RETRIES, START_INDEXER_DELAY_SECONDS, WORKING_INDEXER_THRESHOLD_TIME_MINUTES,
-};
 use crate::domain::models::indexer::IndexerError::FailedToStopIndexer;
-use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerStatus, IndexerType};
+use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerType};
 use crate::handlers::indexers::utils::get_script_tmp_directory;
-use crate::publishers::indexers::{publish_failed_indexer, publish_start_indexer, publish_stop_indexer};
 use crate::utils::env::get_environment_variable;
 
 pub const DEFAULT_STARTING_BLOCK: i64 = 1;
 
 #[async_trait]
 pub trait Indexer {
-    async fn start(&self, indexer: &IndexerModel, attempt: u32) -> Result<u32, IndexerError>;
+    async fn start(&self, indexer: &IndexerModel) -> Result<u32, IndexerError>;
 
     #[allow(clippy::result_large_err)]
-    fn start_common(
-        &self,
-        binary: String,
-        indexer: &IndexerModel,
-        attempt: u32,
-        extra_args: &[&str],
-    ) -> Result<u32, IndexerError> {
+    fn start_common(&self, binary: String, indexer: &IndexerModel, extra_args: &[&str]) -> Result<u32, IndexerError> {
         let script_path = get_script_tmp_directory(indexer.id);
         let auth_token = get_environment_variable("APIBARA_AUTH_TOKEN");
-        let etcd_url = get_environment_variable("APIBARA_ETCD_URL");
+        let redis_url = get_environment_variable("APIBARA_REDIS_URL");
 
         let sink_id = indexer.indexer_id.clone().unwrap_or_else(|| indexer.id.to_string());
         let status_server_address = format!("0.0.0.0:{port}", port = indexer.status_server_port.unwrap_or(1234));
@@ -44,8 +33,8 @@ pub trait Indexer {
             script_path.as_str(),
             "--auth-token",
             auth_token.as_str(),
-            "--persist-to-etcd",
-            etcd_url.as_str(),
+            "--persist-to-redis",
+            redis_url.as_str(),
             "--sink-id",
             sink_id.as_str(),
             "--status-server-address",
@@ -55,7 +44,6 @@ pub trait Indexer {
         ];
         args.extend_from_slice(extra_args);
 
-        let indexer_start_time = Utc::now().time();
         let mut child_handle = Command::new(binary)
             // Silence  stdout and stderr
             .stdout(Stdio::piped())
@@ -63,7 +51,7 @@ pub trait Indexer {
             .env("STARTING_BLOCK", indexer.starting_block.unwrap_or(DEFAULT_STARTING_BLOCK).to_string())
             .args(args)
             .spawn()
-            .map_err(|_| IndexerError::FailedToStartIndexer(indexer.id.to_string()))?;
+            .map_err(|e| IndexerError::FailedToStartIndexer(e.to_string(), indexer.id.to_string()))?;
 
         let id = child_handle.id().expect("Failed to get the child process id");
 
@@ -95,30 +83,11 @@ pub trait Indexer {
                         match result.unwrap().success() {
                             true => {
                                 tracing::info!("Child process exited successfully {}", indexer_id);
-                                publish_stop_indexer(indexer_id, IndexerStatus::Stopped).await.unwrap();
+                                // TODO: stop indexer
                             },
                             false => {
                                 tracing::error!("Child process exited with an error {}", indexer_id);
-                                let indexer_end_time = Utc::now().time();
-                                let indexer_duration = indexer_end_time - indexer_start_time;
-                                if indexer_duration.num_minutes() > WORKING_INDEXER_THRESHOLD_TIME_MINUTES {
-                                    // if the indexer ran for more than threshold time, we will try to restart it
-                                    // with attempt id 1. we don't want to increment the attempt id as this was
-                                    // a successful run and a we want MAX_INDEXER_START_RETRIES to restart the indexer
-                                    tracing::error!("Indexer {} ran for more than 5 minutes, trying restart", indexer_id);
-                                    publish_start_indexer(indexer_id, 1, 0).await.unwrap();
-                                } else if attempt >= MAX_INDEXER_START_RETRIES {
-                                    publish_failed_indexer(indexer_id).await.unwrap();
-                                } else {
-                                    // if the indexer ran for less than threshold time, we will try to restart it
-                                    // by incrementing the attempt id. we increment the attempt id as this was
-                                    // a unsuccessful run and a we don't want to exceed MAX_INDEXER_START_RETRIES
-                                    // we also add a delay before starting the indexer as it's possible there are other
-                                    // instances of the service running which have acquired the lock, they need to shut down
-                                    // before this service can get the lock.
-                                    publish_start_indexer(indexer_id, attempt+1, START_INDEXER_DELAY_SECONDS).await.unwrap();
-                                }
-
+                                // let _ = start_indexer(indexer_id, 1).await;
                             }
                         }
                         break // child process exited
@@ -148,8 +117,8 @@ pub trait Indexer {
 
         let is_success = Command::new("kill")
             // Silence  stdout and stderr
-            // .stdout(Stdio::null())
-            // .stderr(Stdio::null())
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
             .args([
                 process_id.to_string().as_str(),
             ])
@@ -187,66 +156,5 @@ pub fn get_indexer_handler(indexer_type: &IndexerType) -> Box<dyn Indexer + Sync
     match indexer_type {
         IndexerType::Webhook => Box::new(webhook::WebhookIndexer {}),
         IndexerType::Postgres => Box::new(postgres::PostgresIndexer {}),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use std::time::Duration;
-
-    use crate::config::{config, config_force_init};
-    use crate::constants::indexers::MAX_INDEXER_START_RETRIES;
-    use crate::constants::sqs::{FAILED_INDEXER_QUEUE, START_INDEXER_QUEUE};
-    use crate::domain::models::indexer::{IndexerModel, IndexerStatus, IndexerType};
-    use crate::handlers::indexers::indexer_types::get_indexer_handler;
-    use crate::tests::common::utils::assert_queue_contains_message_with_indexer_id;
-    use crate::types::sqs::StartIndexerRequest;
-
-    #[tokio::test]
-    async fn start_indexer_retry() {
-        config_force_init().await;
-        let config = config().await;
-        let indexer = IndexerModel {
-            id: uuid::Uuid::new_v4(),
-            indexer_type: IndexerType::Webhook,
-            process_id: None,
-            status: IndexerStatus::Created,
-            target_url: Some("https://example.com".to_string()),
-            starting_block: None,
-            table_name: None,
-            status_server_port: Some(1234),
-            custom_connection_string: None,
-            indexer_id: None,
-        };
-
-        // clear the sqs queue
-        config.sqs_client().purge_queue().queue_url(START_INDEXER_QUEUE).send().await.unwrap();
-        config.sqs_client().purge_queue().queue_url(FAILED_INDEXER_QUEUE).send().await.unwrap();
-
-        let handler = get_indexer_handler(&indexer.indexer_type);
-
-        let mut attempt = 1;
-
-        while attempt <= MAX_INDEXER_START_RETRIES {
-            // try to start the indexer, it will fail as there is no script loaded
-            assert!(handler.start(&indexer, attempt).await.is_ok());
-
-            // sleep for 1 seconds to let the indexer fail
-            tokio::time::sleep(Duration::from_secs(1)).await;
-
-            // check if the message is present on the queue
-            if attempt < MAX_INDEXER_START_RETRIES {
-                let request = StartIndexerRequest { id: indexer.id, attempt_no: attempt + 1 };
-                assert_queue_contains_message_with_indexer_id(
-                    START_INDEXER_QUEUE,
-                    serde_json::to_string(&request).unwrap(),
-                )
-                .await;
-            } else {
-                assert_queue_contains_message_with_indexer_id(FAILED_INDEXER_QUEUE, indexer.id.to_string()).await;
-            }
-
-            attempt += 1;
-        }
     }
 }
