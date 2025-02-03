@@ -11,7 +11,6 @@ use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use errors::AppError;
 
 use crate::config::{config, establish_connection};
-use crate::consumers::init_consumers;
 use crate::errors::internal_error;
 use crate::handlers::indexers::start_indexer::start_all_indexers;
 use crate::routes::app_router;
@@ -23,8 +22,6 @@ mod grpc;
 mod config;
 /// Constants used accross the service
 pub mod constants;
-/// SQS consumers
-mod consumers;
 /// Database domain models
 mod domain;
 /// Error handling
@@ -33,14 +30,11 @@ mod errors;
 mod handlers;
 /// Database utils (repositories, error handling, etc)
 mod infra;
-/// SQS message publishers
-pub mod publishers;
 /// Route endpoints definitions
 mod routes;
 /// Tests
 #[cfg(test)]
 mod tests;
-pub mod types;
 /// Utilities
 pub mod utils;
 
@@ -71,9 +65,6 @@ async fn main() -> Result<(), AppError> {
     let socket_addr: SocketAddr = address.parse().expect("Failed to parse socket address");
 
     tracing::info!("listening on http://{}", socket_addr);
-
-    // initializes the SQS messages consumers
-    init_consumers().await.map_err(AppError::Indexer)?;
 
     if !config.is_dev() {
         // start all indexers that were running before the service was stopped

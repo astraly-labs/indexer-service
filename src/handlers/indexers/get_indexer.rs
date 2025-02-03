@@ -2,9 +2,8 @@ use axum::extract::State;
 use axum::Json;
 use uuid::Uuid;
 
+use super::utils::query_status_server;
 use crate::domain::models::indexer::{IndexerError, IndexerModel, IndexerServerStatus};
-use crate::grpc::apibara_sink_v1::status_client::StatusClient;
-use crate::grpc::apibara_sink_v1::GetStatusRequest;
 use crate::infra::repositories::indexer_repository::{IndexerFilter, IndexerRepository, Repository};
 use crate::utils::PathExtractor;
 use crate::AppState;
@@ -35,20 +34,9 @@ pub async fn get_indexer_status(
 
     let server_port = indexer_model.status_server_port.ok_or(IndexerError::IndexerStatusServerPortNotFound)?;
 
-    // Create a gRPC client
-    let endpoint = format!("http://localhost:{}", server_port);
-    let mut client = StatusClient::connect(endpoint).await.map_err(IndexerError::FailedToConnectGRPC)?;
+    let status_response = query_status_server(server_port).await?;
 
-    // Create a GetStatusRequest
-    let request = tonic::Request::new(GetStatusRequest {});
-
-    // Fetch the status
-    let response = client.get_status(request).await.map_err(IndexerError::GRPCRequestFailed)?;
-
-    // Process the response
-    let status_response = response.into_inner();
-
-    Ok(Json(status_response.into()))
+    Ok(Json(status_response))
 }
 
 pub async fn get_indexer_status_by_table_name(
@@ -60,18 +48,7 @@ pub async fn get_indexer_status_by_table_name(
 
     let server_port = indexer_model.status_server_port.ok_or(IndexerError::IndexerStatusServerPortNotFound)?;
 
-    // Create a gRPC client
-    let endpoint = format!("http://localhost:{}", server_port);
-    let mut client = StatusClient::connect(endpoint).await.map_err(IndexerError::FailedToConnectGRPC)?;
+    let status_response = query_status_server(server_port).await?;
 
-    // Create a GetStatusRequest
-    let request = tonic::Request::new(GetStatusRequest {});
-
-    // Fetch the status
-    let response = client.get_status(request).await.map_err(IndexerError::GRPCRequestFailed)?;
-
-    // Process the response
-    let status_response = response.into_inner();
-
-    Ok(Json(status_response.into()))
+    Ok(Json(status_response))
 }

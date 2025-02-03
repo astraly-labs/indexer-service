@@ -1,0 +1,7 @@
+{
+  "gcs_base_url": "http://localhost:4443",
+  "disable_oauth": true,
+  "client_email": "",
+  "private_key": "",
+  "private_key_id": ""
+}

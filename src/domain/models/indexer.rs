@@ -1,13 +1,9 @@
-use aws_sdk_s3::error::SdkError;
-use aws_sdk_s3::operation::get_object::GetObjectError;
-use aws_sdk_s3::operation::put_object::PutObjectError;
-use aws_sdk_s3::primitives::ByteStreamError;
 use axum::extract::multipart::MultipartError;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use object_store::Error;
 use serde::{Deserialize, Serialize};
-use sqs_worker::SQSListenerClientBuilderError;
 use strum_macros::{Display, EnumString};
 use uuid::Uuid;
 
@@ -42,6 +38,8 @@ pub struct IndexerModel {
     pub table_name: Option<String>,
     pub status_server_port: Option<i32>,
     pub custom_connection_string: Option<String>,
+    pub starting_block: Option<i64>,
+    pub indexer_id: Option<String>,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -80,20 +78,16 @@ pub enum IndexerError {
     FailedToBuildCreateIndexerRequest,
     #[error("failed to create file : {0}")]
     FailedToCreateFile(std::io::Error),
-    #[error("failed to push to queue")]
-    FailedToPushToQueue(aws_sdk_sqs::Error),
     #[error("failed to stop indexer : {0}")]
     FailedToStopIndexer(i64),
-    #[error("failed to start indexer : {0}")]
-    FailedToStartIndexer(String),
-    #[error("failed to upload to S3")]
-    FailedToUploadToS3(SdkError<PutObjectError>),
-    #[error("failed to get from S3")]
-    FailedToGetFromS3(SdkError<GetObjectError>),
-    #[error("failed to collect bytes from S3")]
-    FailedToCollectBytesFromS3(ByteStreamError),
-    #[error("failed to create SQS listener")]
-    FailedToCreateSQSListener(SQSListenerClientBuilderError),
+    #[error("failed to start indexer : {0} (id: {1})")]
+    FailedToStartIndexer(String, String),
+    #[error("failed to upload to object_store")]
+    FailedToUploadToStore(Error),
+    #[error("failed to get from object_store")]
+    FailedToGetFromStore(Error),
+    #[error("failed to get collect bytes from object_store")]
+    FailedToCollectBytesFromStore(Error),
     #[error("invalid indexer status")]
     InvalidIndexerStatus(IndexerStatus),
     #[error("failed to query db")]

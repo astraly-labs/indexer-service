@@ -14,4 +14,7 @@ This service is a way to index on any event on the blockchain via an API.
 
 1. Set AWS environment variables
 2. Download the bin file
-3. Create SQS queue
+
+## Running tests
+1. Run docker compose `docker compose -f compose.dev.yaml up --build`
+2. Run tests with `cargo nextest run --test-threads=1`

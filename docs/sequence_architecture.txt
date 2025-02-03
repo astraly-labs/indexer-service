@@ -1,48 +1,50 @@
-title Architecture
+sequenceDiagram
+    title Architecture
 
-actor User
-participant Indexer Service
-database Database
+    actor User
+    participant Indexer Service
+    participant S3
+    participant Database
+    participant Child Process
 
+    User->>Indexer Service: POST / {script.js}
+    
+    rect rgb(200, 200, 240)
+        note right of User: transaction
+        Indexer Service->>S3: Save script.js to S3
+        S3-->>Indexer Service: ok
+        Indexer Service->>Database: Create indexer in CREATED state
+        Database-->>Indexer Service: ok
+    end
+    
+    Indexer Service->>S3: get script
+    S3-->>Indexer Service: script
+    Indexer Service->>Child Process: start apibara indexing with binary
+    Child Process-->>Indexer Service: ok
+    Indexer Service->>Database: update indexer process id
+    Database-->>Indexer Service: ok
+    Indexer Service-->>User: ok
 
-User -> Indexer Service: POST / {script.js}
-group transaction
-Indexer Service -> S3: Save script.js to S3
-S3 -->Indexer Service:ok
-Indexer Service ->Database: Create indexer in CREATED state
-Database -->Indexer Service: ok
-end
-Indexer Service -> SQS: queue start indexer with id X
-Indexer Service-->User:ok
-SQS -->Indexer Service: start indexer with id X
-Indexer Service->S3: get script
-S3 -->Indexer Service: script
-Indexer Service->Child Process:start apibara indexing with binary
-Child Process-->Indexer Service:ok
-Indexer Service->Database:update indexer process id
-Database-->Indexer Service:ok
-alt indexer fails
-Child Process->Indexer Service: service failed
-Indexer Service->SQS: queue fail indexer with id X
-SQS-->Indexer Service: fail indexer with id X
-Indexer Service->Database: mark indexer with id X as FailedRunning
-Database-->Indexer Service:ok
-else indexer is stopped
-User ->Indexer Service:/stop/:id
-Indexer Service->Database: get process id
-Database-->Indexer Service:process id
-Indexer Service->Child Process: terminate
-Child Process-->Indexer Service: ok
-Indexer Service->Database:mark as FailedStopping
-Database-->Indexer Service:ok
-Indexer Service-->User:ok
-else start a previously stopped indexer
-User ->Indexer Service:/start/:id
-Indexer Service->S3:get script
-S3-->Indexer Service:script
-Indexer Service->Child Process: start
-Child Process-->Indexer Service: ok
-Indexer Service->Database:mark as Running and update process Id
-Database-->Indexer Service:ok
-Indexer Service-->User:ok
-end
+    alt indexer fails
+        Child Process->>Indexer Service: service failed
+        Indexer Service->>Database: mark indexer with id X as FailedRunning
+        Database-->>Indexer Service: ok
+    else indexer is stopped
+        User->>Indexer Service: /stop/:id
+        Indexer Service->>Database: get process id
+        Database-->>Indexer Service: process id
+        Indexer Service->>Child Process: terminate
+        Child Process-->>Indexer Service: ok
+        Indexer Service->>Database: mark as FailedStopping
+        Database-->>Indexer Service: ok
+        Indexer Service-->>User: ok
+    else start a previously stopped indexer
+        User->>Indexer Service: /start/:id
+        Indexer Service->>S3: get script
+        S3-->>Indexer Service: script
+        Indexer Service->>Child Process: start
+        Child Process-->>Indexer Service: ok
+        Indexer Service->>Database: mark as Running and update process Id
+        Database-->>Indexer Service: ok
+        Indexer Service-->>User: ok
+    end
