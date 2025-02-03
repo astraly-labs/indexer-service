@@ -2,7 +2,7 @@ use std::env;
 use std::sync::Arc;
 
 use arc_swap::{ArcSwap, Guard};
-//use aws_sdk_s3::Client as S3Client;
+// use aws_sdk_s3::Client as S3Client;
 #[cfg(test)]
 use diesel::{Connection, PgConnection, RunQueryDsl};
 use diesel::{ConnectionError, ConnectionResult};
@@ -14,19 +14,12 @@ use diesel_async::RunQueryDsl as AsyncRunQueryDsl;
 use dotenvy::dotenv;
 use futures_util::future::BoxFuture;
 use futures_util::FutureExt;
-use tokio::sync::OnceCell;
-
-use object_store::ObjectStore;
-
 #[cfg(feature = "aws")]
 use object_store::aws::AmazonS3Builder;
-
 #[cfg(feature = "gcp")]
 use object_store::gcp::GoogleCloudStorageBuilder;
-
-
-use crate::utils::env::get_environment_variable;
-
+use object_store::ObjectStore;
+use tokio::sync::OnceCell;
 
 #[cfg(test)]
 use crate::run_migrations;
@@ -34,6 +27,7 @@ use crate::run_migrations;
 use crate::tests::common::constants::TEST_DB_NAME;
 #[cfg(test)]
 use crate::tests::common::utils::clear_db;
+use crate::utils::env::get_environment_variable;
 
 #[derive(Debug)]
 struct ServerConfig {
@@ -48,7 +42,7 @@ struct DatabaseConfig {
 
 pub struct Config {
     server: ServerConfig,
-    //s3_client: S3Client,
+    // s3_client: S3Client,
     object_store: Arc<dyn ObjectStore>,
     pool: Arc<Pool<AsyncPgConnection>>,
     db_config: DatabaseConfig,
@@ -63,10 +57,6 @@ impl Config {
     pub fn server_port(&self) -> u16 {
         self.server.port
     }
-
-    // pub fn s3_client(&self) -> &S3Client {
-    //     &self.s3_client
-    // }
 
     pub fn object_store(&self) -> &Arc<dyn ObjectStore> {
         &self.object_store
@@ -120,10 +110,10 @@ async fn init_config() -> Config {
     //     // init AWS S3 client
     //     let s3_client = S3Client::new(&shared_config);
 
-    //     Config { server: server_config, s3_client, pool: Arc::new(pool), db_config: database_config, is_dev }
-    // } else {
-    //     let localstack_endpoint = env::var("LOCALSTACK_ENDPOINT").expect("LOCALSTACK_ENDPOINT must be set");
-    //     let shared_config = aws_config::from_env().load().await;
+    //     Config { server: server_config, s3_client, pool: Arc::new(pool), db_config: database_config,
+    // is_dev } } else {
+    //     let localstack_endpoint = env::var("LOCALSTACK_ENDPOINT").expect("LOCALSTACK_ENDPOINT must be
+    // set");     let shared_config = aws_config::from_env().load().await;
 
     //     // init AWS S3 client
     //     let s3_config = aws_sdk_s3::config::Builder::from(&shared_config)
@@ -132,8 +122,8 @@ async fn init_config() -> Config {
     //         .build();
     //     let s3_client = S3Client::from_conf(s3_config);
 
-    //     Config { server: server_config, s3_client, pool: Arc::new(pool), db_config: database_config, is_dev }
-    // }
+    //     Config { server: server_config, s3_client, pool: Arc::new(pool), db_config: database_config,
+    // is_dev } }
 
     #[cfg(feature = "gcp")]
     let object_store = create_gcs_client().await;
@@ -141,7 +131,14 @@ async fn init_config() -> Config {
     #[cfg(feature = "aws")]
     let object_store = create_s3_client().await;
 
-    Config { server: server_config, /* s3_client, */  object_store, pool: Arc::new(pool), db_config: database_config, is_dev }
+    Config {
+        server: server_config,
+        // s3_client,
+        object_store,
+        pool: Arc::new(pool),
+        db_config: database_config,
+        is_dev,
+    }
 }
 
 #[cfg(test)]
@@ -182,27 +179,21 @@ pub async fn init_config() -> Config {
     // init tables
     run_migrations(database_config.url.clone()).await.expect("Failed to run migrations");
 
-    // // init AWS config
-    // let shared_config = aws_config::from_env().load().await;
-
-    // let localstack_endpoint = get_environment_variable("LOCALSTACK_ENDPOINT");
-
-    // // init AWS S3 client
-    // let s3_config = aws_sdk_s3::config::Builder::from(&shared_config)
-    //     .endpoint_url(localstack_endpoint)
-    //     .force_path_style(true)
-    //     .build();
-    // let s3_client = S3Client::from_conf(s3_config);
-
     #[cfg(feature = "gcp")]
     let object_store = create_gcs_client().await;
 
     #[cfg(feature = "aws")]
     let object_store = create_s3_client().await;
 
-    Config { server: server_config, /* s3_client, */ object_store, pool: Arc::new(pool), db_config: database_config, is_dev: true }
+    Config {
+        server: server_config,
+        // object_store,
+        object_store,
+        pool: Arc::new(pool),
+        db_config: database_config,
+        is_dev: true,
+    }
 }
-
 
 #[cfg(feature = "gcp")]
 async fn create_gcs_client() -> Arc<dyn ObjectStore> {
@@ -210,41 +201,29 @@ async fn create_gcs_client() -> Arc<dyn ObjectStore> {
     let gcs_service_account = get_environment_variable("GCS_SERVICE_ACCOUNT");
 
     let gcs = GoogleCloudStorageBuilder::new()
-            .with_bucket_name(gcs_bucket_name)
-            .with_service_account_path(gcs_service_account)
-            .build()
-            .expect("Failed to create gcs object store");
-    
+        .with_bucket_name(gcs_bucket_name)
+        .with_service_account_path(gcs_service_account)
+        .build()
+        .expect("Failed to create gcs object store");
+
     Arc::new(gcs)
 }
 
 #[cfg(feature = "aws")]
-async fn create_s3_client() -> Arc<dyn ObjectStore> {    
-    // let shared_config = aws_config::load_from_env().await;
-
-    // let localstack_endpoint = get_environment_variable("LOCALSTACK_ENDPOINT");
-
-    // let store = AmazonS3Builder::new()
-    //     .with_config(&shared_config)
-    //     .with_endpoint(localstack_endpoint)
-    //     .with_path_style()
-    //     .build()
-    //     .expect("Failed to create S3 object store");
+async fn create_s3_client() -> Arc<dyn ObjectStore> {
     let aws_region = get_environment_variable("AWS_REGION");
     let aws_access_key_id = get_environment_variable("AWS_ACCESS_KEY_ID");
     let aws_secret_access_key = get_environment_variable("AWS_SECRET_ACCESS_KEY");
     let aws_bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
     let localstack_endpoint = get_environment_variable("LOCALSTACK_ENDPOINT");
-    
+
     let s3 = AmazonS3Builder::new()
         .with_region(aws_region)
         .with_access_key_id(aws_access_key_id)
         .with_secret_access_key(aws_secret_access_key)
         .with_bucket_name(aws_bucket_name)
-        // localstack
         .with_endpoint(localstack_endpoint)
         .with_allow_http(true)
-        //
         .build()
         .expect("Failed to create S3 object store");
 

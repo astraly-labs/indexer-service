@@ -10,11 +10,10 @@ use crate::domain::models::types::AxumErrorResponse;
 use crate::handlers::indexers::utils::get_s3_script_key;
 use crate::tests::common::constants::{TABLE_NAME, WORKING_APIBARA_SCRIPT};
 use crate::tests::common::utils::{
-    assert_s3_contains_key, get_indexer, get_indexer_by_table_name, send_create_indexer_request,
+    assert_store_contains_key, get_indexer, get_indexer_by_table_name, send_create_indexer_request,
     send_create_postgres_indexer_request,
 };
 use crate::tests::server::common::setup_server;
-use crate::utils::env::get_environment_variable;
 
 #[rstest]
 #[tokio::test]
@@ -35,9 +34,8 @@ async fn create_postgres_indexer(#[future] setup_server: SocketAddr) {
     assert_eq!(body.table_name, Some(TABLE_NAME.into()));
     assert_eq!(body.indexer_type, IndexerType::Postgres);
 
-    // check if the file exists on S3
-    let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
-    assert_s3_contains_key(&bucket_name, get_s3_script_key(body.id).as_str()).await;
+    // check if the file exists in our object store
+    assert_store_contains_key(get_s3_script_key(body.id).as_str()).await;
 
     // check indexer is present in DB in created state
     let indexer = get_indexer(body.id).await;

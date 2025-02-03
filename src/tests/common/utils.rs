@@ -8,6 +8,7 @@ use hyper::client::HttpConnector;
 use hyper::{Body, Client};
 use mpart_async::client::MultipartRequest;
 use mpart_async::filestream::FileStream;
+use object_store::path::Path;
 use tokio::process::Command;
 use uuid::Uuid;
 
@@ -164,10 +165,10 @@ pub async fn send_delete_indexer_request(client: Client<HttpConnector>, id: Uuid
         .unwrap()
 }
 
-/// Assert that a s3 buckets contains a specified key
-pub async fn assert_s3_contains_key(bucket: &str, key: &str) {
+/// Assert that a store's bucket contains a specified key
+pub async fn assert_store_contains_key(key: &str) {
     let config = config().await;
-    assert!(config.s3_client().get_object().bucket(bucket).key(key).send().await.is_ok());
+    assert!(config.object_store().get(&Path::from(key)).await.is_ok());
 }
 
 /// Get an indexer of the specified id from the database

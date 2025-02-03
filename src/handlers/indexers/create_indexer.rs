@@ -153,7 +153,6 @@ pub async fn create_indexer(
     };
 
     let config = config().await;
-    // let bucket_name = get_environment_variable("INDEXER_SERVICE_BUCKET");
 
     let connection = &mut state.pool.get().await.expect("Failed to get a connection from the pool");
     let created_indexer = connection
@@ -166,16 +165,6 @@ pub async fn create_indexer(
                     .await?
                     .try_into()
                     .map_err(|e| IndexerError::InfraError(InfraError::ParseError(e)))?;
-
-                // config
-                //     .s3_client()
-                //     .put_object()
-                //     .bucket(bucket_name)
-                //     .key(get_s3_script_key(id))
-                //     .body(create_indexer_request.data.into())
-                //     .send()
-                //     .await
-                //     .map_err(IndexerError::FailedToUploadToS3)?;
 
                 let location = Path::from(get_s3_script_key(id));
                 config

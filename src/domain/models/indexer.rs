@@ -1,15 +1,11 @@
-// use aws_sdk_s3::error::SdkError;
-// use aws_sdk_s3::operation::get_object::GetObjectError;
-// use aws_sdk_s3::operation::put_object::PutObjectError;
-// use aws_sdk_s3::primitives::ByteStreamError;
 use axum::extract::multipart::MultipartError;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
+use object_store::Error;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
 use uuid::Uuid;
-use object_store::Error;
 
 use crate::domain::models::types::AxumErrorResponse;
 use crate::grpc::apibara_sink_v1::GetStatusResponse;
@@ -86,12 +82,6 @@ pub enum IndexerError {
     FailedToStopIndexer(i64),
     #[error("failed to start indexer : {0} (id: {1})")]
     FailedToStartIndexer(String, String),
-    // #[error("failed to upload to S3")]
-    // FailedToUploadToS3(GetObjectError<PutObjectError>),
-    // #[error("failed to get from S3")]
-    // FailedToGetFromS3(SdkError<GetObjectError>),
-    // #[error("failed to collect bytes from S3")]
-    // FailedToCollectBytesFromS3(ByteStreamError),
     #[error("failed to upload to object_store")]
     FailedToUploadToStore(Error),
     #[error("failed to get from object_store")]
