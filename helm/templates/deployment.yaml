@@ -2,51 +2,68 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "pragma-indexer.fullname" . }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"  
   labels:
     {{- include "pragma-indexer.labels" . | nindent 4 }}
 spec:
+  {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  strategy:
+    type: {{ .Values.deploymentStrategy}}
   selector:
     matchLabels:
-      {{- include "pragma-indexer.selectorLabels" . | nindent 6 }}
+      {{- include "pragma-indexer.labels" . | nindent 6 }}
   template:
     metadata:
+      {{- with .Values.podAnnotations }}
       annotations:
-        checksum/secrets: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
-        {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
-        {{- end }}
+      {{- end }}
       labels:
-        {{- include "pragma-indexer.selectorLabels" . | nindent 8 }}
+        {{- include "pragma-indexer.labels" . | nindent 8 }}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       serviceAccountName: {{ include "pragma-indexer.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: {{ .Chart.Name }}
+        - name: {{ include "pragma-indexer.fullname" . }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
+          {{- range .Values.service.ports }}
+          - containerPort: {{ .containerPort }}
+            name: {{ .portName }}
+            protocol: {{ .protocol }}
+          {{- end }}             
+
+          {{- with .Values.env }}
+          env:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.envFromSecret }}
+          envFrom:
+            - secretRef:
+                name: {{ .Values.envFromSecret.secretName }}
+          {{- end }}        
+          {{- with .Values.livenessProbe }}
           livenessProbe:
-            httpGet:
-              path: /health
-              port: http
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.readinessProbe }}
           readinessProbe:
-            httpGet:
-              path: /health
-              port: http
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          envFrom:
-            - configMapRef:
-                name: {{ include "pragma-indexer.fullname" . }}
-            - secretRef:
-                name: {{ include "pragma-indexer.fullname" . }}-secrets
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}      
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

@@ -1,28 +1,47 @@
-{{- if .Values.ingress.enabled -}}
+{{- $fullname := include "pragma-indexer.fullname" . }}
+{{- range $val := .Values.ingress }}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "pragma-indexer.fullname" . }}
-  labels:
-    {{- include "pragma-indexer.labels" . | nindent 4 }}
+  {{- if $val.name }}
+  name: {{ $val.name }}
+  {{- else if $val.suffix }}
+  name: {{ $fullname }}-{{ $val.suffix }}-ingress
+  {{- else }}
+  name: {{ $fullname }}-ingress
+  {{- end }}
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    kubernetes.io/ingress.class: {{ .Values.ingress.className }}
-spec:
-  tls:
-    {{- if .Values.ingress.tls.enabled }}
-    - hosts:
-        - {{ .Values.ingress.host }}
-      secretName: {{ .Values.ingress.tls.secretName }}
+    argocd.argoproj.io/sync-wave: "2"  
+    {{- with $val.annotations }}  
+    {{- toYaml . | nindent 4 }}
     {{- end }}
+spec:
+  {{- if $val.className }}
+  ingressClassName: {{ $val.className }}
+  {{- end }}
+  {{- if $val.tls }}
+  tls:
+    {{- range $val.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    {{- range $val.hosts }}
+    - host: {{ .host | quote }}
       http:
         paths:
-          - path: /
-            pathType: Prefix
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
             backend:
               service:
-                name: {{ include "pragma-indexer.fullname" . }}
-                port:
-                  number: {{ .Values.service.port }}
+                name: {{ $fullname }}-service
+                port: 
+                  number: {{ .servicePort }}
+          {{- end }}
+    {{- end }}
+{{- end }}
