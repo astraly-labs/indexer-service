@@ -16,5 +16,5 @@ spec:
   {{- end }}
   selector:
     matchLabels:
-      {{- include "pragma-indexer.labels" . | nindent 6 }}
+      {{- include "pragma-indexer.selectorLabels" . | nindent 6 }}
 {{- end }}

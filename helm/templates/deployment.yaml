@@ -14,7 +14,7 @@ spec:
     type: {{ .Values.deploymentStrategy}}
   selector:
     matchLabels:
-      {{- include "pragma-indexer.labels" . | nindent 6 }}
+      {{- include "pragma-indexer.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -22,7 +22,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "pragma-indexer.labels" . | nindent 8 }}
+        {{- include "pragma-indexer.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
