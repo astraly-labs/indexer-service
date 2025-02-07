@@ -108,8 +108,8 @@ gcpSecrets:
   enabled: false
   projectId: ${PROJECT_ID}
   externalSecret:
-    name: "monitoring-secrets"
-    secretPath: "monitoring-secrets"
+    name: "indexer-secrets"
+    secretPath: "indexer-secrets"
     refreshInterval: "1h"
 
 # Environment variables from secret
