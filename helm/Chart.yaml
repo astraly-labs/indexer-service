@@ -1,5 +1,6 @@
 apiVersion: v2
 name: pragma-indexer
-description: A Helm chart for Pragma Indexer Service
+description: This service is a way to index on any event on the blockchain via an API.
 version: 0.1.0
 appVersion: "1.0.0"
+icon: https://raw.githubusercontent.com/kubernetes/kubernetes/refs/heads/master/logo/logo.svg
