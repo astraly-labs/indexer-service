@@ -67,7 +67,7 @@ export const config = {
   network: "starknet",
   finality: "DATA_STATUS_PENDING",
   filter,
-  sinkType: "console",
+  sinkType: "postgres",
   sinkOptions: {
     // Send data as returned by `transform`.
     // When `raw = false`, the data is sent together with the starting and end cursor.
