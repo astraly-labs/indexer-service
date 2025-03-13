@@ -26,6 +26,7 @@ pub enum IndexerType {
     #[default]
     Webhook,
     Postgres,
+    Console,
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]

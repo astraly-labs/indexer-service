@@ -27,7 +27,7 @@ function decodeTransfersInBlock({ header, events }) {
 
     // Convert to snake_case because it works better with postgres.
     return {
-      network: "starknet-goerli",
+      network: "starknet-mainnet",
       symbol: "ETH",
       block_hash: blockHash,
       block_number: +blockNumber,

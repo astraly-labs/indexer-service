@@ -1,5 +1,6 @@
 use std::net::TcpListener;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicI32, Ordering};
 
 use axum::body::Bytes;
 use axum::extract::{Multipart, State};
@@ -10,6 +11,7 @@ use diesel_async::{AsyncConnection, RunQueryDsl};
 use object_store::path::Path;
 use serde::Deserialize;
 use uuid::Uuid;
+use tokio::time::{sleep, timeout, Duration};
 
 use super::fail_indexer::fail_indexer;
 use super::start_indexer::start_indexer;
@@ -21,6 +23,9 @@ use crate::infra::db::schema::indexers;
 use crate::infra::errors::InfraError;
 use crate::infra::repositories::indexer_repository::{self, IndexerDb};
 use crate::AppState;
+
+// At module level
+static NEXT_PORT: AtomicI32 = AtomicI32::new(10000);
 
 #[derive(Debug, Deserialize)]
 pub struct CreateIndexerRequest {
@@ -68,19 +73,26 @@ impl CreateIndexerRequest {
                     return false;
                 }
             }
+            IndexerType::Console => {}
         };
         true
     }
 
     /// Set a random available port for the gRPC status server
     fn set_random_port(&mut self) {
-        // Bind to a random port
-        if let Ok(listener) = TcpListener::bind("127.0.0.1:0") {
-            if let Ok(addr) = listener.local_addr() {
-                // Set the found port
-                self.status_server_port = addr.port() as i32;
+        // Get and increment the next port atomically
+        let port = NEXT_PORT.fetch_add(1, Ordering::SeqCst);
+        
+        // Verify the port is actually available
+        while TcpListener::bind(format!("127.0.0.1:{}", port)).is_err() {
+            let next_port = NEXT_PORT.fetch_add(1, Ordering::SeqCst);
+            if next_port > 20000 {  // Upper limit
+                NEXT_PORT.store(10000, Ordering::SeqCst);  // Reset to start
+                continue;
             }
         }
+        
+        self.status_server_port = port;
     }
 }
 
@@ -146,7 +158,7 @@ pub async fn create_indexer(
         type_: create_indexer_request.indexer_type.to_string(),
         target_url: create_indexer_request.target_url.clone(),
         table_name: create_indexer_request.table_name.clone(),
-        status_server_port: None,
+        status_server_port: Some(create_indexer_request.status_server_port),
         custom_connection_string: create_indexer_request.custom_connection_string.clone(),
         starting_block: create_indexer_request.starting_block,
         indexer_id: create_indexer_request.indexer_id.clone(),
@@ -184,13 +196,37 @@ pub async fn create_indexer(
     // wait a bit for the indexer to start
     tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
 
-    // check the status server from apibara
-    // if we have an error we simply return the error and shutdown the indexer
+    // Poll the status server for up to 10 seconds
+    let poll_timeout = Duration::from_secs(10);
+    let poll_interval = Duration::from_millis(500);
     let server_port = created_indexer.status_server_port.ok_or(IndexerError::IndexerStatusServerPortNotFound)?;
-    let server_status = query_status_server(server_port).await?;
-    if server_status.status != 1 {
-        fail_indexer(created_indexer.id).await?;
-    }
+    
+    let poll_result = timeout(poll_timeout, async {
+        loop {
+            match query_status_server(server_port).await {
+                Ok(status) if status.status == 1 => return Ok(status),
+                Ok(_) => {
+                    sleep(poll_interval).await;
+                    continue;
+                },
+                Err(IndexerError::FailedToConnectGRPC(_)) => {
+                    sleep(poll_interval).await;
+                    continue;
+                },
+                Err(e) => return Err(e),
+            }
+        }
+    }).await;
 
-    Ok(Json(created_indexer))
+    match poll_result {
+        Ok(Ok(_)) => Ok(Json(created_indexer)),
+        Ok(Err(e)) => {
+            fail_indexer(created_indexer.id).await?;
+            Err(e)
+        },
+        Err(_) => {
+            fail_indexer(created_indexer.id).await?;
+            Err(IndexerError::InternalServerError("Indexer failed to start within timeout".into()))
+        }
+    }
 }
