@@ -40,12 +40,12 @@ spec:
           ports:
           {{- range .Values.service.ports }}
           {{- if hasKey . "startPort" }}
-          {{- $start := .startPort }}
-          {{- $end := .endPort }}
-          {{- range $port := untilStep $start (add $end 1) 1 }}
-          - containerPort: {{ $port }}
+          {{- $start := int .startPort }}
+          {{- $end := int .endPort }}
+          {{- range untilStep $start (add1 $end) 1 }}
+          - containerPort: {{ . }}
             protocol: {{ $.protocol }}
-            name: {{ $.portName }}-{{ $port }}
+            name: {{ $.portName }}-{{ . }}
           {{- end }}
           {{- else }}
           - containerPort: {{ .containerPort }}
