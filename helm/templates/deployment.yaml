@@ -39,10 +39,20 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
           {{- range .Values.service.ports }}
+          {{- if hasKey . "startPort" }}
+          {{- $start := .startPort }}
+          {{- $end := .endPort }}
+          {{- range $port := untilStep $start (add $end 1) 1 }}
+          - containerPort: {{ $port }}
+            protocol: {{ $.protocol }}
+            name: {{ $.portName }}-{{ $port }}
+          {{- end }}
+          {{- else }}
           - containerPort: {{ .containerPort }}
             name: {{ .portName }}
             protocol: {{ .protocol }}
-          {{- end }}             
+          {{- end }}
+          {{- end }}
 
           {{- with .Values.env }}
           env:
