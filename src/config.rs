@@ -143,14 +143,14 @@ async fn init_config() -> Config {
 
 #[cfg(test)]
 pub async fn init_config() -> Config {
-    dotenv().ok();
+    dotenv().unwrap();
     // init server config
     let server_config = ServerConfig {
         host: env::var("HOST").unwrap_or_else(|_| String::from("127.0.0.1")),
         port: env::var("PORT").unwrap_or_else(|_| String::from("3000")).parse::<u16>().unwrap(),
     };
 
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL_TEST").expect("DATABASE_URL must be set");
     // First, connect to the db to be able to create our test database.
     let mut conn = PgConnection::establish(&database_url).expect("Cannot connect to the database.");
 

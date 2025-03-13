@@ -100,6 +100,11 @@ jobs:
           sudo cp sink-postgres-x86_64-linux /bin/sink-postgres
           sudo chmod 777 /bin/sink-postgres
 
+          wget https://github.com/apibara/dna/releases/download/sink-console/v0.8.0/sink-console-x86_64-linux.gz
+          gunzip sink-console-x86_64-linux.gz
+          sudo cp sink-console-x86_64-linux /bin/sink-console
+          sudo chmod 777 /bin/sink-console
+
       - name: Start LocalStack
         run: |
           pip install awscli-local

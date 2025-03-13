@@ -1,5 +1,6 @@
 pub mod postgres;
 pub mod webhook;
+pub mod console;
 
 use std::process::Stdio;
 
@@ -26,7 +27,14 @@ pub trait Indexer {
         let redis_url = get_environment_variable("APIBARA_REDIS_URL");
 
         let sink_id = indexer.indexer_id.clone().unwrap_or_else(|| indexer.id.to_string());
-        let status_server_address = format!("0.0.0.0:{port}", port = indexer.status_server_port.unwrap_or(1234));
+        
+        let status_server_port = indexer.status_server_port.unwrap_or_else(|| {
+            let id_str = indexer.id.to_string();
+            let port_offset = u16::from_str_radix(&id_str[id_str.len()-4..], 16).unwrap_or(0);
+            1234 + port_offset as i32
+        });
+        
+        let status_server_address = format!("0.0.0.0:{port}", port = status_server_port);
 
         let mut args = vec![
             "run",
@@ -45,7 +53,6 @@ pub trait Indexer {
         args.extend_from_slice(extra_args);
 
         let mut child_handle = Command::new(binary)
-            // Silence  stdout and stderr
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .env("STARTING_BLOCK", indexer.starting_block.unwrap_or(DEFAULT_STARTING_BLOCK).to_string())
@@ -62,39 +69,46 @@ pub trait Indexer {
         let mut stderr_reader = BufReader::new(stderr).lines();
 
         let indexer_id = indexer.id;
-        tokio::spawn(async move {
+        
+        // Create a separate task group for each indexer
+        let task_handle = tokio::spawn(async move {
             loop {
                 tokio::select! {
                     result = stdout_reader.next_line() => {
                         match result {
                             Ok(Some(line)) => tracing::info!("[indexer-{}-stdout] {}", indexer_id, line),
-                            Err(_) => (), // we will break on .wait
+                            Err(_) => break,
                             _ => ()
                         }
                     }
                     result = stderr_reader.next_line() => {
                         match result {
                             Ok(Some(line)) => tracing::info!("[indexer-{}-stderr] {}", indexer_id, line),
-                            Err(_) => (), // we will break on .wait
+                            Err(_) => break,
                             _ => ()
                         }
                     }
                     result = child_handle.wait() => {
-                        match result.unwrap().success() {
-                            true => {
-                                tracing::info!("Child process exited successfully {}", indexer_id);
-                                // TODO: stop indexer
-                            },
-                            false => {
-                                tracing::error!("Child process exited with an error {}", indexer_id);
-                                // let _ = start_indexer(indexer_id, 1).await;
+                        match result {
+                            Ok(status) => {
+                                if status.success() {
+                                    tracing::info!("Child process exited successfully {}", indexer_id);
+                                } else {
+                                    tracing::error!("Child process exited with an error {}", indexer_id);
+                                }
+                            }
+                            Err(e) => {
+                                tracing::error!("Error waiting for child process {}: {}", indexer_id, e);
                             }
                         }
-                        break // child process exited
+                        break;
                     }
-                };
+                }
             }
         });
+
+        // Store the task handle somewhere if you want to manage it later
+        // You could add it to a HashMap<Uuid, JoinHandle> to track running indexers
 
         Ok(id)
     }
@@ -156,5 +170,7 @@ pub fn get_indexer_handler(indexer_type: &IndexerType) -> Box<dyn Indexer + Sync
     match indexer_type {
         IndexerType::Webhook => Box::new(webhook::WebhookIndexer {}),
         IndexerType::Postgres => Box::new(postgres::PostgresIndexer {}),
+        IndexerType::Console => Box::new(console::ConsoleIndexer {}),
     }
 }
+

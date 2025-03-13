@@ -27,7 +27,8 @@ pub fn clear_db(db_url: &str, db_name: &str) {
     let disconnect_users = format!(
         "SELECT pg_terminate_backend(pid)
             FROM pg_stat_activity
-            WHERE datname = '{}';",
+            WHERE datname = '{}'
+            AND pid <> pg_backend_pid();",
         db_name
     );
 
