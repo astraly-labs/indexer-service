@@ -198,13 +198,21 @@ pub async fn init_config() -> Config {
 #[cfg(feature = "gcp")]
 async fn create_gcs_client() -> Arc<dyn ObjectStore> {
     let gcs_bucket_name = get_environment_variable("GCS_BUCKET_NAME");
-    let gcs_service_account = get_environment_variable("GCS_SERVICE_ACCOUNT");
-
-    let gcs = GoogleCloudStorageBuilder::new()
-        .with_bucket_name(gcs_bucket_name)
-        .with_service_account_path(gcs_service_account)
-        .build()
-        .expect("Failed to create gcs object store");
+    // Check if we're running locally by looking for the service account key
+    let gcs = if let Ok(service_account_key) = std::env::var("GCS_SERVICE_ACCOUNT_KEY") {
+        // Local development: use service account key
+        GoogleCloudStorageBuilder::new()
+            .with_bucket_name(gcs_bucket_name)
+            .with_service_account_key(service_account_key)
+            .build()
+            .expect("Failed to create gcs object store with service account key")
+    } else {
+        // Production: use Workload Identity through metadata server
+        GoogleCloudStorageBuilder::new()
+            .with_bucket_name(gcs_bucket_name)
+            .build()
+            .expect("Failed to create gcs object store with workload identity")
+    };
 
     Arc::new(gcs)
 }

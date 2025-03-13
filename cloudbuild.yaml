@@ -1,0 +1,20 @@
+timeout: 3600s
+
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    id: docker-build
+    env:
+      - 'DOCKER_BUILDKIT=1'
+    args: [ 'build',
+            '--tag=${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:latest',
+            '--file=Dockerfile',
+            '.' ]
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: docker-push
+    args: ['push', '${_REGION}-docker.pkg.dev/${PROJECT_ID}/${_REPO_NAME}/${_IMAGE_NAME}:latest']
+    waitFor: ['docker-build']
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  machineType: 'E2_HIGHCPU_8'
