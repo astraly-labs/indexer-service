@@ -18,7 +18,11 @@ spec:
   ports:
     {{- range .Values.service.ports }}
     - port: {{ .port }}
+      {{- if .portRange }}
       targetPort: {{ .containerPort }}
+      {{- else }}
+      targetPort: {{ .containerPort }}
+      {{- end }}
       protocol: {{ .protocol }}
       name: {{ .portName }}
     {{- end }}
