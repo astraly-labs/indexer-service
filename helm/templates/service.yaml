@@ -17,17 +17,10 @@ spec:
   type: {{ .Values.service.type }}
   ports:
     {{- range .Values.service.ports }}
-    {{- if hasKey . "startPort" }}
-    - name: {{ .portName }}
-      protocol: {{ .protocol }}
-      port: {{ .startPort }}
-      targetPort: {{ .startPort }}
-    {{- else }}
     - port: {{ .port }}
       targetPort: {{ .containerPort }}
       protocol: {{ .protocol }}
       name: {{ .portName }}
-    {{- end }}
     {{- end }}
   selector:
     {{- include "pragma-indexer.selectorLabels" . | nindent 4 }}

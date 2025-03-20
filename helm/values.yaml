@@ -71,11 +71,37 @@ nodeSelector:
   {}
   # Nodelabel: "node-devnet"
 
-tolerations: []
+tolerations:
+  []
+  # - key: "devnet"
+  #   operator: "Equal"
+  #   value: "reserved"
+  #   effect: "NoSchedule"
 
 affinity: {}
 
-ingress: {}
+ingress:
+  {}
+  # - name: "dummy"
+  #   className: "nginx"
+  #   annotations: {}
+  #     # kubernetes.io/ingress.class: nginx
+  #     # Add other annotations as needed
+  #   hosts:
+  #     - host: chart-example.local
+  #       paths:
+  #         - path: /
+  #           pathType: Prefix
+  #           servicePort: 80
+  #     - host: chart-example-secure.local
+  #       paths:
+  #         - path: /
+  #           pathType: Prefix
+  #           servicePort: 443
+  #   tls: []
+  #     # - secretName: chart-example-tls
+  #     #   hosts:
+  #     #     - chart-example-secure.local
 
 # GCP Secrets Configuration
 gcpSecrets:

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: {{ include "pragma-indexer.fullname" . }}
   annotations:
-    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-wave: "2"  
   labels:
     {{- include "pragma-indexer.labels" . | nindent 4 }}
 spec:
@@ -39,16 +39,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
           {{- range .Values.service.ports }}
-          {{- if hasKey . "startPort" }}
-          - containerPort: {{ .startPort }}
-            protocol: {{ .protocol }}
-            name: {{ .portName }}
-          {{- else }}
           - containerPort: {{ .containerPort }}
             name: {{ .portName }}
             protocol: {{ .protocol }}
-          {{- end }}
-          {{- end }}
+          {{- end }}             
 
           {{- with .Values.env }}
           env:
@@ -72,6 +66,9 @@ spec:
           volumeMounts:
             - name: openapi-volume
               mountPath: /app/openapi
+            {{- if .Values.deployment.extraVolumeMounts }}
+            {{- toYaml .Values.deployment.extraVolumeMounts | nindent 12 }}
+            {{- end }}
       terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}      
       {{- with .Values.nodeSelector }}
       nodeSelector:
@@ -88,3 +85,6 @@ spec:
       volumes:
         - name: openapi-volume
           emptyDir: {}
+        {{- if .Values.deployment.extraVolumes }}
+        {{- toYaml .Values.deployment.extraVolumes | nindent 8 }}
+        {{- end }}

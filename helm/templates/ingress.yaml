@@ -1,27 +1,29 @@
 {{- $fullname := include "pragma-indexer.fullname" . }}
-{{- range $val := .Values.ingress }}
+{{- if .Values.ingress }}
+{{- range .Values.ingress }}
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  {{- if $val.name }}
-  name: {{ $val.name }}
-  {{- else if $val.suffix }}
-  name: {{ $fullname }}-{{ $val.suffix }}-ingress
+  {{- if .name }}
+  name: {{ .name }}
+  {{- else if .suffix }}
+  name: {{ $fullname }}-{{ .suffix }}-ingress
   {{- else }}
   name: {{ $fullname }}-ingress
   {{- end }}
   annotations:
-    argocd.argoproj.io/sync-wave: "2"  
-    {{- with $val.annotations }}  
+    argocd.argoproj.io/sync-wave: "2"
+    {{- with .annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  {{- if $val.className }}
-  ingressClassName: {{ $val.className }}
+  {{- if .className }}
+  ingressClassName: {{ .className }}
   {{- end }}
-  {{- if $val.tls }}
+  {{- if .tls }}
   tls:
-    {{- range $val.tls }}
+    {{- range .tls }}
     - hosts:
         {{- range .hosts }}
         - {{ . | quote }}
@@ -30,7 +32,7 @@ spec:
     {{- end }}
   {{- end }}
   rules:
-    {{- range $val.hosts }}
+    {{- range .hosts }}
     - host: {{ .host | quote }}
       http:
         paths:
@@ -40,8 +42,9 @@ spec:
             backend:
               service:
                 name: {{ $fullname }}
-                port: 
+                port:
                   number: {{ .servicePort }}
           {{- end }}
     {{- end }}
+{{- end }}
 {{- end }}
